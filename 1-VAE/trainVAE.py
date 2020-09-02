@@ -129,7 +129,7 @@ class TrainVAE():
 def main():
     opt = argparse.ArgumentParser()
     opt.add_argument('-d',  dest='data_path', type=str, required=True, help='datasets path')
-    opt.add_argument('-s',  dest='save_path', type=str, requied=True, help='save path')
+    opt.add_argument('-s',  dest='save_path', type=str, required=True, help='save path')
     opt.add_argument('-z',  dest='z_dim', type=int, default=100, required=False, help='latent space dimension')
     opt.add_argument('-e',  dest='epohs', type=int, default=3000, required=False, help='epochs')
     opt.add_argument('-b',  dest='batch_size', type=int, default=256, required=False, help='batch size')
