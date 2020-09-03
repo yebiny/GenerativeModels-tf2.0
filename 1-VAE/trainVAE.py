@@ -131,7 +131,7 @@ def main():
     opt.add_argument('-d',  dest='data_path', type=str, required=True, help='datasets path')
     opt.add_argument('-s',  dest='save_path', type=str, required=True, help='save path')
     opt.add_argument('-z',  dest='z_dim', type=int, default=100, required=False, help='latent space dimension')
-    opt.add_argument('-e',  dest='epohs', type=int, default=3000, required=False, help='epochs')
+    opt.add_argument('-e',  dest='epochs', type=int, default=3000, required=False, help='epochs')
     opt.add_argument('-b',  dest='batch_size', type=int, default=256, required=False, help='batch size')
     argv = opt.parse_args()
 
@@ -148,9 +148,9 @@ def main():
     Epochs : {EPOCHS}
     Batch size : {BATCH_SIZE}
     '''.format(DATASET=argv.data_path, SAVE_PATH=argv.save_path, LAT_DIM=argv.z_dim, EPOCHS=argv.epochs, BATCH_SIZE=argv.batch_size)
-    with open(SAVE_PATH+'/log.txt', 'a') as log_file:
+    with open(argv.save_path+'/log.txt', 'a') as log_file:
         log_file.write(log)
-    with open(SAVE_PATH+'/log.txt', 'w') as log_file:
+    with open(argv.save_path+'/log.txt', 'w') as log_file:
         log_file.write(log)
     
 
