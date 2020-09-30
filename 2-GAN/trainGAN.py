@@ -2,12 +2,14 @@ import os, sys
 import argparse
 import numpy as np
 from tensorflow.keras.utils import plot_model
-from models import *
+from buildModel import *
 from drawTools import *
+from getData import *
 
 
 def plot_generated_images(generator, seed, save=None):
     generated_images = generator.predict(seed)
+    generated_images = (generated_images+1)/2
     plot_multiple_images(generated_images, 4, save) 
 
 def get_dataset(x_data, batch_size):
@@ -49,7 +51,7 @@ class GAN():
         # y1 : half '0' half '1' for discriminator train 
         # y2 : all '1' for generator train
         y1, y2, seed = make_constants(self.noise_dim, self.batch_size)
-        plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_init')
+        plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg')
 
         # Train
         for epoch in range(n_epochs):
@@ -70,24 +72,23 @@ class GAN():
             plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_%i'%epoch)
 
 
-def get_fashion_mnist():
-    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
-    x_train = x_train.astype(np.float32) / 255
-    x_test = x_test.astype(np.float32) / 255
-    x_train = x_train.reshape(-1, 28, 28, 1) * 2. - 1. 
-    x_test = x_test.reshape(-1, 28, 28, 1) * 2. - 1. 
-   
-    return x_train, x_test
     
 def main():
-    opt = argparse.ArgumentParser()
-    opt.add_argument(dest='save_path', type=str, help='save path')
-    opt.add_argument('-e',  dest='epochs', type=int, default=5, help='epochs')
+    opt = argparse.ArgumentParser(description="==== GAN with tensorflow2.x ====")
+    opt.add_argument(dest='save_path', type=str, help=': set save directory ')
+    opt.add_argument('--data', type=str, default='fmnist', help=': choice among [mnist / fmnist / cifar] (default: [fmnist] )')
+    opt.add_argument('-e',  dest='epochs', type=int, default=5, help=': number epochs')
+    
     argv = opt.parse_args()
     if not os.path.exists(argv.save_path): os.makedirs(argv.save_path)
     
-    x_train, _ = get_fashion_mnist()
-    print(x_train.shape)
+    if argv.data =='mnist':
+        x_train, _ = get_mnist()
+    elif argv.data =='fmnist':
+        x_train, _ = get_fashion_mnist()
+    elif argv.data =='cifar':
+        x_train, _ = get_cifar10()
+    print('* Use dataset', argv.data, x_train.shape)
     
     gan = GAN(x_train, argv.save_path)
     plot_model(gan.gan, to_file=argv.save_path+'/gan.png', show_shapes=True)
