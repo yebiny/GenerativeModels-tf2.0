@@ -22,6 +22,11 @@ def plot_multiple_images(images, n_cols=None, save=None):
     else:
         plt.show()
 
+def plot_generated_images(generator, seed, save=None):
+    generated_images = generator.predict(seed)
+    generated_images = (generated_images+1)/2
+    plot_multiple_images(generated_images, 8, save) 
+
 def plot_loss(history, save=None):
     figure=plt.figure()
     plt.xlabel('epoch')

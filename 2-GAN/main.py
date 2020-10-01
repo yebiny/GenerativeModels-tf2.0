@@ -34,11 +34,9 @@ def main():
     print('* Use dataset', args.data, x_train.shape)
     
     gan = GAN(x_train, args.save_path)
+    gan.compile()
     history = gan.train(args.epochs)
     
-    plot_model(gan.gan, to_file=args.save_path+'/gan.png', show_shapes=True)
-    plot_model(gan.generator, to_file=args.save_path+'/gene.png',show_shapes=True)
-    plot_model(gan.discriminator, to_file=args.save_path+'/disc.png',show_shapes=True)
     plot_loss(history, args.save_path+'/loss.png')
 
 if __name__=='__main__':

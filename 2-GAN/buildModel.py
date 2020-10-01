@@ -25,15 +25,14 @@ def build_gan(data_shape, noise_dim):
     y = layers.Dense(1, activation="sigmoid")(y)
     discriminator=models.Model(inputs_image, y, name='Discriminator')
    
-    gan = models.Sequential([generator, discriminator], name='CGAN')
+    gan = models.Sequential([generator, discriminator], name='GAN')
     
-    return gan
+    return gan, generator, discriminator
 
 def main():
-    data_shape=(1, 36,36,1)
+    data_shape=(1,28,28,1)
     noise_dim=100
-    gan  = build_gan(data_shape, noise_dim)
-    generator, discriminator=gan.layers
+    gan, generator, discriminator  = build_gan(data_shape, noise_dim)
     
     generator.summary()
     discriminator.summary()

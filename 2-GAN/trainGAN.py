@@ -1,24 +1,8 @@
 import numpy as np
 from buildModel import *
 from drawTools import *
-
-def plot_generated_images(generator, seed, save=None):
-    generated_images = generator.predict(seed)
-    generated_images = (generated_images+1)/2
-    plot_multiple_images(generated_images, 4, save) 
-
-def get_dataset(x_data, batch_size):
-    dataset = tf.data.Dataset.from_tensor_slices(x_data).shuffle(1000)
-    dataset = dataset.batch(batch_size, drop_remainder=True).prefetch(1)
-    print(dataset)
-    return dataset
-
-def make_constants(noise_dim, batch_size):
-    y0 = tf.constant([[0.]] * batch_size)
-    y1 = tf.constant([[1.]] * batch_size)
-    seed = tf.random.normal(shape=[16, noise_dim])
-    return y0, y1, seed
-
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.optimizers import Adam
 
 class GAN():
     def __init__(self, x_data, save_path, noise_dim=100, batch_size=32):
@@ -28,24 +12,32 @@ class GAN():
         self.noise_dim = noise_dim
         self.batch_size= batch_size
 
-        self.gan = build_gan(x_data.shape, noise_dim)
-        self.generator, self.discriminator = self.gan.layers
-        self.gan.summary()
+        self.gan, self.generator, self.discriminator= build_gan(x_data.shape, noise_dim)
+        plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
+        plot_model(self.generator, to_file=self.save_path+'/generator.png',show_shapes=True)
+        plot_model(self.discriminator, to_file=self.save_path+'/discriminator.png',show_shapes=True)
 
+    def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         # When compile generator(gan), discriminator must not trainable!
-        self.discriminator.compile(loss="binary_crossentropy", optimizer="rmsprop")
+        self.discriminator.compile(loss='binary_crossentropy', optimizer=optimizer)
         self.discriminator.trainable = False
-        self.gan.compile(loss="binary_crossentropy", optimizer="rmsprop")
-
+        self.gan.compile(loss='binary_crossentropy', optimizer=optimizer)
+    
+    def make_constants(self):
+        y0 = tf.constant([[0.]] * self.batch_size)
+        y1 = tf.constant([[1.]] * self.batch_size)
+        seed = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+        return y0, y1, seed
     
     def train(self, n_epochs):
 
         # Set data
-        dataset = get_dataset(self.x_data, self.batch_size)
+        dataset = tf.data.Dataset.from_tensor_slices(self.x_data).shuffle(1000)
+        dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
 
         # y1 : half '0' half '1' for discriminator train 
         # y2 : all '1' for generator train
-        y0, y1, seed = make_constants(self.noise_dim, self.batch_size)
+        y0, y1, seed = self.make_constants()
         plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_0')
 
         # Train
