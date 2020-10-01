@@ -2,7 +2,7 @@ import numpy as np
 from buildModel import *
 from drawTools import *
 from tensorflow.keras.utils import to_categorical, plot_model
-
+from tensorflow.keras.optimizers import Adam
 
 class CGAN():
     def __init__(self, x_data, y_data, save_path, noise_dim=100, batch_size=32):
@@ -19,9 +19,9 @@ class CGAN():
         plot_model(self.generator, to_file=save_path+'/generator.png',show_shapes=True)
         plot_model(self.discriminator, to_file=save_path+'/discriminator.png',show_shapes=True)
     
-    def compile(self, optimizer):
+    def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         # When compile generator(gan), discriminator must not trainable!
-        self.generator.compile(loss=['binary_crossentropy'], optimizer = optimizer)
+        #self.generator.compile(loss=['binary_crossentropy'], optimizer = optimizer)
         self.discriminator.compile(loss=['binary_crossentropy'], optimizer = optimizer)
         self.discriminator.trainable = False
         self.cgan.compile(loss="binary_crossentropy", optimizer=optimizer)

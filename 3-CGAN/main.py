@@ -21,7 +21,7 @@ def check_args(args):
     elif args.data =='fmnist':
         x_train, y_train = get_fashion_mnist()
     elif args.data =='cifar':
-        x_train, y_train_ = get_cifar10()
+        x_train, y_train = get_cifar10()
 
     return x_train, y_train
 
@@ -37,8 +37,7 @@ def main():
     # Make model
     cgan = CGAN(x_train, y_train, args.save_path)
     # Compile model
-    adam = tf.keras.optimizers.Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)
-    cgan.compile(adam)
+    cgan.compile()
     # Train model
     history = cgan.train(args.epochs)
     # Plot loss
