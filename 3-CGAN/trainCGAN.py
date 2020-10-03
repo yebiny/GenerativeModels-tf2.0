@@ -29,10 +29,10 @@ class CGAN():
     def make_constants(self):
         y0 = tf.constant([[0.]] * self.batch_size)
         y1 = tf.constant([[1.]] * self.batch_size)
-        seed_noise = tf.random.normal(shape=[6*self.label_dim, self.noise_dim])
-        seed_label = [j for i in range(6) for j in range(self.label_dim)]
-        seed_label = to_categorical(seed_label)
-        return y0, y1, seed_noise, seed_label
+        seed_noises = tf.random.normal(shape=[6*self.label_dim, self.noise_dim])
+        seed_labels = [j for i in range(6) for j in range(self.label_dim)]
+        seed_labels = to_categorical(seed_labels)
+        return y0, y1, seed_noises, seed_labels
     
     
     def train(self, n_epochs):
@@ -43,9 +43,9 @@ class CGAN():
 
         # y1 : all value '0' and shape is (batch_size, )
         # y2 : all value '1' and shape is (bathc_size, )
-        # seed_noise, seed_label : seed for genrator inputs(noise, label)
-        y0, y1, seed_noise, seed_label = self.make_constants()
-        plot_generated_images(self.generator, seed_noise, seed_label, save=self.save_path+'/generatedImg_0')
+        # seed_noise, seed_label : seed for genrator inputs to draw each epoch(noise, label)
+        y0, y1, seed_noises, seed_labels = self.make_constants()
+        plot_generated_images(self.generator, seed_noises, seed_labels, save=self.save_path+'/generatedImg_0')
 
         # train
         history = {'epoch':[], 'd_loss':[], 'g_loss':[]}
@@ -54,27 +54,27 @@ class CGAN():
             
             d_loss=g_loss=0
             for images, labels in dataset:
-                # phase 1 - training the discriminator
-                noise = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                generated_images = self.generator.predict([noise, labels])
+                # phase 1 - train discriminator
+                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+                generated_images = self.generator.predict([noises, labels])
 
                 self.discriminator.trainable = True
                 d_loss = d_loss+0.5*self.discriminator.train_on_batch([images, labels], y1)
                 d_loss = d_loss+0.5*self.discriminator.train_on_batch([generated_images, labels], y0)
 
-                # phase 2 - training the generator
-                noise = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+                # phase 2 - train generator
+                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
                 random_labels = np.random.randint(0, self.label_dim, self.batch_size).reshape(-1,1)
                 random_labels = to_categorical(random_labels, self.label_dim)
                 
                 self.discriminator.trainable = False
-                g_loss = g_loss+self.cgan.train_on_batch([noise, random_labels], y1)
+                g_loss = g_loss+self.cgan.train_on_batch([random_noises, random_labels], y1)
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
             history['epoch'].append(epoch)
             history['d_loss'].append(d_loss)
             history['g_loss'].append(g_loss)
-            plot_generated_images(self.generator, seed_noise, seed_label, save=self.save_path+'/generatedImg_%i'%epoch)
+            plot_generated_images(self.generator, seed_noises, seed_labels, save=self.save_path+'/generatedImg_%i'%epoch)
             
         return history
     

@@ -40,9 +40,9 @@ def build_cgan(x_shape, y_shape, noise_dim):
     y = layers.Flatten()(y)
     decision = layers.Dense(1, activation="sigmoid", name='Decision')(y)
     
-    discriminator=models.Model(inputs=[input_image, input_label], outputs=decision, name='Discriminator')
+    discriminator=models.Model(inputs=[input_image, input_label], outputs=[decision], name='Discriminator')
 
-    generated_images=generator([input_noise, input_label])
+    generated_images = generator([input_noise, input_label])
     decision = discriminator([generated_images, input_label])
     cgan = models.Model(inputs=[input_noise, input_label], outputs=[decision], name='CGAN')
 
