@@ -2,17 +2,17 @@ import numpy as np
 from buildModel import *
 from drawTools import *
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import *
 
 class GAN():
-    def __init__(self, x_data, save_path, noise_dim=100, batch_size=32):
+    def __init__(self, x_data, save_path, z_dim=100, batch_size=32):
     
         self.x_data = x_data
         self.save_path=save_path
-        self.noise_dim = noise_dim
+        self.z_dim = z_dim
         self.batch_size= batch_size
 
-        self.gan, self.generator, self.discriminator= build_gan(x_data.shape, noise_dim)
+        self.gan, self.generator, self.discriminator= build_gan(x_data.shape, z_dim)
         plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
         plot_model(self.generator, to_file=self.save_path+'/generator.png',show_shapes=True)
         plot_model(self.discriminator, to_file=self.save_path+'/discriminator.png',show_shapes=True)
@@ -22,18 +22,26 @@ class GAN():
         self.discriminator.compile(loss='binary_crossentropy', optimizer=optimizer)
         self.discriminator.trainable = False
         self.gan.compile(loss='binary_crossentropy', optimizer=optimizer)
-    
+
+
+    def make_datasets(self):
+        dataset = tf.data.Dataset.from_tensor_slices(self.x_data).shuffle(1)
+        dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
+        return dataset
+
     def make_constants(self):
         y0 = tf.constant([[0.]] * self.batch_size)
         y1 = tf.constant([[1.]] * self.batch_size)
-        seed = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+        seed = tf.random.normal(shape=[self.batch_size, self.z_dim])
         return y0, y1, seed
-    
+   
+    def make_z(self):
+        return  tf.random.normal(shape=[self.batch_size, self.z_dim])
+
     def train(self, n_epochs):
 
         # Set data
-        dataset = tf.data.Dataset.from_tensor_slices(self.x_data).shuffle(1000)
-        dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
+        dataset = self.make_datasets()
 
         # y1 : half '0' half '1' for discriminator train 
         # y2 : all '1' for generator train
@@ -46,19 +54,20 @@ class GAN():
             print("Epoch {}/{}".format(epoch, n_epochs))
             
             d_loss=g_loss=0
-            for images in dataset:
+            for x_real in dataset:
                 # phase 1 - training the discriminator
-                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                generated_images = self.generator.predict(random_noises)
-
+                z = self.make_z()
+                x_fake = self.generator.predict(z)
+                
                 self.discriminator.trainable = True
-                d_loss = d_loss+0.5*self.discriminator.train_on_batch(images, y1)
-                d_loss = d_loss+0.5*self.discriminator.train_on_batch(generated_images, y0)
+                dl1 = self.discriminator.train_on_batch(x_real, y1)
+                dl2 = self.discriminator.train_on_batch(x_fake, y0)
+                d_loss = d_loss + (0.5*dl1) + (0.5*dl2)
 
                 # phase 2 - training the generator
-                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+                z = self.make_z()
                 self.discriminator.trainable = False
-                g_loss = g_loss+self.gan.train_on_batch(random_noises, y1)
+                g_loss = g_loss+self.gan.train_on_batch(z, y1)
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
             history['epoch'].append(epoch)
