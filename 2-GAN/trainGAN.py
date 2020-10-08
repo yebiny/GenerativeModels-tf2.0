@@ -48,17 +48,17 @@ class GAN():
             d_loss=g_loss=0
             for images in dataset:
                 # phase 1 - training the discriminator
-                noise = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                generated_images = self.generator.predict(noise)
+                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+                generated_images = self.generator.predict(random_noises)
 
                 self.discriminator.trainable = True
                 d_loss = d_loss+0.5*self.discriminator.train_on_batch(images, y1)
                 d_loss = d_loss+0.5*self.discriminator.train_on_batch(generated_images, y0)
 
                 # phase 2 - training the generator
-                noise = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
                 self.discriminator.trainable = False
-                g_loss = g_loss+self.gan.train_on_batch(noise, y1)
+                g_loss = g_loss+self.gan.train_on_batch(random_noises, y1)
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
             history['epoch'].append(epoch)

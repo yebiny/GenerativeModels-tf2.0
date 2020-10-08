@@ -56,7 +56,7 @@ class CGAN():
             for images, labels in dataset:
                 # phase 1 - train discriminator
                 random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                generated_images = self.generator.predict([noises, labels])
+                generated_images = self.generator.predict([random_noises, labels])
 
                 self.discriminator.trainable = True
                 d_loss = d_loss+0.5*self.discriminator.train_on_batch([images, labels], y1)
