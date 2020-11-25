@@ -43,8 +43,9 @@ class GAN():
         # Set data
         dataset = self.make_datasets()
 
-        # y1 : half '0' half '1' for discriminator train 
-        # y2 : all '1' for generator train
+        # y0 : all '0' constants
+        # y1 : all '1' constants
+        # seed : random values with size [ batch_size * z_dimension ]
         y0, y1, seed = self.make_constants()
         plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_0')
 
@@ -67,7 +68,8 @@ class GAN():
                 # phase 2 - training the generator
                 z = self.make_z()
                 self.discriminator.trainable = False
-                g_loss = g_loss+self.gan.train_on_batch(z, y1)
+                gl = self.gan.train_on_batch(z , y1)
+                g_loss = g_loss + gl
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
             history['epoch'].append(epoch)
