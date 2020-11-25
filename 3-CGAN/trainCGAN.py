@@ -34,7 +34,12 @@ class CGAN():
         seed_labels = to_categorical(seed_labels)
         return y0, y1, seed_noises, seed_labels
     
-    
+    def make_randoms(self):
+        random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
+        random_labels = np.random.randint(0, self.label_dim, self.batch_size).reshape(-1,1)
+        random_labels = to_categorical(random_labels, self.label_dim)
+        return random_noises, random_labels 
+
     def train(self, n_epochs):
 
         # get dataset
@@ -43,7 +48,7 @@ class CGAN():
 
         # y1 : all value '0' and shape is (batch_size, )
         # y2 : all value '1' and shape is (bathc_size, )
-        # seed_noise, seed_label : seed for genrator inputs to draw each epoch(noise, label)
+        # seed_noise, seed_label : random values and shape is ( batch_size * z_dimension )
         y0, y1, seed_noises, seed_labels = self.make_constants()
         plot_generated_images(self.generator, seed_noises, seed_labels, save=self.save_path+'/generatedImg_0')
 
@@ -53,22 +58,22 @@ class CGAN():
             print("Epoch {}/{}".format(epoch, n_epochs))
             
             d_loss=g_loss=0
-            for images, labels in dataset:
+            for x_real, labels in dataset:
                 # phase 1 - train discriminator
-                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                generated_images = self.generator.predict([random_noises, labels])
+                random_noises, _ = self.make_randoms() 
+                x_fake = self.generator.predict([random_noises, labels])
 
                 self.discriminator.trainable = True
-                d_loss = d_loss+0.5*self.discriminator.train_on_batch([images, labels], y1)
-                d_loss = d_loss+0.5*self.discriminator.train_on_batch([generated_images, labels], y0)
+                dl1 = self.discriminator.train_on_batch([x_real, labels], y1)
+                dl2 = self.discriminator.train_on_batch([x_fake, labels], y0)
+                d_loss = d_loss + (0.5*dl1) + (0.5*dl2)
 
                 # phase 2 - train generator
-                random_noises = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-                random_labels = np.random.randint(0, self.label_dim, self.batch_size).reshape(-1,1)
-                random_labels = to_categorical(random_labels, self.label_dim)
+                randome_noises, random_labels = self.make_randoms() 
                 
                 self.discriminator.trainable = False
-                g_loss = g_loss+self.cgan.train_on_batch([random_noises, random_labels], y1)
+                gl = self.cgan.train_on_batch([random_noises, random_labels], y1)
+                g_loss = g_loss + gl
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
             history['epoch'].append(epoch)

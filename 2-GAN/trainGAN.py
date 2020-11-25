@@ -35,17 +35,18 @@ class GAN():
         seed = tf.random.normal(shape=[self.batch_size, self.z_dim])
         return y0, y1, seed
    
-    def make_z(self):
-        return  tf.random.normal(shape=[self.batch_size, self.z_dim])
+    def make_randoms(self):
+        random_noises =  tf.random.normal(shape=[self.batch_size, self.z_dim])
+        return random_noises
 
     def train(self, n_epochs):
 
         # Set data
         dataset = self.make_datasets()
 
-        # y0 : all '0' constants
-        # y1 : all '1' constants
-        # seed : random values with size [ batch_size * z_dimension ]
+        # y1 : all value '0' and shape is (batch_size, )
+        # y2 : all value '1' and shape is (bathc_size, )
+        # seed : random values and shape is ( batch_size * z_dimension )
         y0, y1, seed = self.make_constants()
         plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_0')
 
@@ -57,8 +58,8 @@ class GAN():
             d_loss=g_loss=0
             for x_real in dataset:
                 # phase 1 - training the discriminator
-                z = self.make_z()
-                x_fake = self.generator.predict(z)
+                random_noises = self.make_randoms()
+                x_fake = self.generator.predict(random_noisese)
                 
                 self.discriminator.trainable = True
                 dl1 = self.discriminator.train_on_batch(x_real, y1)
@@ -66,9 +67,10 @@ class GAN():
                 d_loss = d_loss + (0.5*dl1) + (0.5*dl2)
 
                 # phase 2 - training the generator
-                z = self.make_z()
+                random_noises = self.make_randoms()
+
                 self.discriminator.trainable = False
-                gl = self.gan.train_on_batch(z , y1)
+                gl = self.gan.train_on_batch(random_noises , y1)
                 g_loss = g_loss + gl
             
             print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
