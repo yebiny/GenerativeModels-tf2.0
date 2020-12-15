@@ -59,7 +59,7 @@ class GAN():
             for x_real in dataset:
                 # phase 1 - training the discriminator
                 random_noises = self.make_randoms()
-                x_fake = self.generator.predict(random_noisese)
+                x_fake = self.generator.predict(random_noises)
                 
                 self.discriminator.trainable = True
                 dl1 = self.discriminator.train_on_batch(x_real, y1)
