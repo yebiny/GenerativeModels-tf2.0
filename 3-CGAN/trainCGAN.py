@@ -21,10 +21,14 @@ class CGAN():
     
     def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         # When compile generator(gan), discriminator must not trainable!
-        #self.generator.compile(loss=['binary_crossentropy'], optimizer = optimizer)
         self.discriminator.compile(loss=['binary_crossentropy'], optimizer = optimizer)
         self.discriminator.trainable = False
         self.cgan.compile(loss="binary_crossentropy", optimizer=optimizer)
+
+    def make_datasets(self):
+        dataset = tf.data.Dataset.from_tensor_slices((self.x_data, self.y_data)).shuffle(1)
+        dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
+        return dataset
 
     def make_constants(self):
         y0 = tf.constant([[0.]] * self.batch_size)
@@ -42,9 +46,8 @@ class CGAN():
 
     def train(self, n_epochs):
 
-        # get dataset
-        dataset = tf.data.Dataset.from_tensor_slices((self.x_data, self.y_data)).shuffle(1000)
-        dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
+        # set data
+        dataset = self.make_datasets()
 
         # y1 : all value '0' and shape is (batch_size, )
         # y2 : all value '1' and shape is (bathc_size, )

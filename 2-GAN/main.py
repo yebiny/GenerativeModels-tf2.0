@@ -1,5 +1,7 @@
 import os, sys
+sys.path.append("../")
 import argparse
+
 from getData import *
 from trainGAN import *
 from tensorflow.keras.utils import plot_model

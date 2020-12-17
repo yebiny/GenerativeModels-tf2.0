@@ -23,7 +23,6 @@ class GAN():
         self.discriminator.trainable = False
         self.gan.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-
     def make_datasets(self):
         dataset = tf.data.Dataset.from_tensor_slices(self.x_data).shuffle(1)
         dataset = dataset.batch(self.batch_size, drop_remainder=True).prefetch(1)
@@ -41,7 +40,7 @@ class GAN():
 
     def train(self, n_epochs):
 
-        # Set data
+        # set data
         dataset = self.make_datasets()
 
         # y1 : all value '0' and shape is (batch_size, )
@@ -50,7 +49,7 @@ class GAN():
         y0, y1, seed = self.make_constants()
         plot_generated_images(self.generator, seed, save=self.save_path+'/generatedImg_0')
 
-        # Train
+        # train
         history = {'epoch':[], 'd_loss':[], 'g_loss':[]}
         for epoch in range(1, n_epochs+1):
             print("Epoch {}/{}".format(epoch, n_epochs))

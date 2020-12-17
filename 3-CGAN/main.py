@@ -1,4 +1,5 @@
 import os, sys
+sys.path.append("../")
 import argparse
 from getData import *
 from trainCGAN import *
