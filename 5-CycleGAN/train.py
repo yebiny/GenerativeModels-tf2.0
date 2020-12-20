@@ -1,6 +1,7 @@
 import numpy as np
 from buildModel import *
 from dataGenerator import *
+from drawTools import *
 from tensorflow.keras.utils import plot_model
 
 class TrainCycleGAN():
@@ -9,13 +10,13 @@ class TrainCycleGAN():
         self.dataset = dataset
         self.img_shape = img_shape
         self.batch_size = batch_size
-        self.disc_path = (i, 8, 1)
-    
+        self.disc_path = (8, 8, 1)
+        self.save_path = save_path 
         CycleGAN = BuildCycleGAN(img_shape)
         self.gene_ab, self.gene_ba, self.disc_a, self.disc_b, self.combined = CycleGAN.build_cyclegan()
-        combined.summary()
-        plot_model(self.gene, to_file=save_path+'/gene.png', show_shapes=True)        
-        plot_model(self.disc, to_file=save_path+'/disc.png', show_shapes=True)        
+        self.combined.summary()
+        plot_model(self.gene_ab, to_file=save_path+'/gene.png', show_shapes=True)        
+        plot_model(self.disc_a, to_file=save_path+'/disc.png', show_shapes=True)        
         plot_model(self.combined, to_file=save_path+'/cyclegan.png', show_shapes=True)        
     
     def make_datasets(self, buffer_size=1000):
@@ -42,11 +43,11 @@ class TrainCycleGAN():
     def train(self, epochs):
         y0, y1 = self.make_constant()
         train_a, train_b, test_a, test_b = self.make_datasets()
-        
+        sample_a, sample_b = next(iter(train_a)), next(iter(train_b))
+
         for epoch in range(epochs):
             for batch_idx, (imgs_a, imgs_b) in enumerate(tf.data.Dataset.zip(
                                                   (train_a, train_b))):
-                print(batch_idx)
                 fake_b = self.gene_ab.predict(imgs_a)
                 fake_a = self.gene_ba.predict(imgs_b)
                 self.disc_a.trainable = True
@@ -64,5 +65,8 @@ class TrainCycleGAN():
                 self.disc_b.trainable = False
                 g_loss = self.combined.train_on_batch([imgs_a, imgs_b],
                                                      [y1, y1, imgs_a, imgs_b, imgs_a, imgs_b]) 
-                
-            print('* %i : da_loss:%f, db_loss:%f, g_loss'%(epoch, da_loss, db_loss, g_loss))
+                            
+                if batch_idx%100==0: 
+                    generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, 
+                                 self.save_path+'/geneImg_%i_%i'%(epoch, batch_idx) )        
+                    print('* %i - %i  :'%(epoch, batch_idx), da_loss, db_loss, g_loss)
