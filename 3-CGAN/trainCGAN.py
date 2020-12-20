@@ -16,8 +16,8 @@ class CGAN():
         
         self.cgan, self.generator, self.discriminator = build_cgan(x_data.shape, y_data.shape, noise_dim)
         plot_model(self.cgan, to_file=save_path+'/cgan.png', show_shapes=True)
-        plot_model(self.generator, to_file=save_path+'/generator.png',show_shapes=True)
-        plot_model(self.discriminator, to_file=save_path+'/discriminator.png',show_shapes=True)
+        plot_model(self.generator, to_file=save_path+'/gene.png',show_shapes=True)
+        plot_model(self.discriminator, to_file=save_path+'/disc.png',show_shapes=True)
     
     def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         # When compile generator(gan), discriminator must not trainable!

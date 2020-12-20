@@ -4,13 +4,14 @@ import argparse
 
 from getData import *
 from trainGAN import *
-from tensorflow.keras.utils import plot_model
 
 def parse_args():
     opt = argparse.ArgumentParser(description="==== GAN with tensorflow2.x ====")
     opt.add_argument(dest='save_path', type=str, help=': set save directory ')
-    opt.add_argument('--data', type=str, default='fmnist', help=': choice among [mnist / fmnist / cifar] (default: [fmnist] )')
-    opt.add_argument('-e',  dest='epochs', type=int, default=5, help=': number epochs (default: 5)')
+    opt.add_argument('--data', type=str, default='fmnist', 
+                    help=': choice among [mnist / fmnist / cifar] (default: [fmnist] )')
+    opt.add_argument('-e',  dest='epochs', type=int, default=5, 
+                    help=': number epochs (default: 5)')
     
     args = opt.parse_args()
 

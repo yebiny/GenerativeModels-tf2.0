@@ -14,8 +14,8 @@ class GAN():
 
         self.gan, self.generator, self.discriminator= build_gan(x_data.shape, z_dim)
         plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
-        plot_model(self.generator, to_file=self.save_path+'/generator.png',show_shapes=True)
-        plot_model(self.discriminator, to_file=self.save_path+'/discriminator.png',show_shapes=True)
+        plot_model(self.generator, to_file=self.save_path+'/gene.png',show_shapes=True)
+        plot_model(self.discriminator, to_file=self.save_path+'/disc.png',show_shapes=True)
 
     def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         # When compile generator(gan), discriminator must not trainable!
