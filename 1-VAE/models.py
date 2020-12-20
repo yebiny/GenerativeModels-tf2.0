@@ -1,3 +1,4 @@
+import argparse
 import tensorflow as tf
 from tensorflow.keras import layers, models
 from tensorflow.keras import backend as K
@@ -9,7 +10,6 @@ def sampling(args):
     # Returns:
         z (tensor): sampled latent vector
     """
-
     z_mean, z_log_var = args
     batch = K.shape(z_mean)[0]
     dim = K.int_shape(z_mean)[1]
@@ -19,18 +19,18 @@ def sampling(args):
 
 
 def build_vae(x_shape, z_dimension):
-    inputs = layers.Input(shape=x_shape)
+    inputs = layers.Input(shape=x_shape[1:])
     
     y = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
     y = layers.LeakyReLU()(y)
     y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
     y = layers.LeakyReLU()(y)
-    y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-    y = layers.LeakyReLU()(y)
     #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
     #y = layers.LeakyReLU()(y)
-    y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-    y = layers.LeakyReLU()(y)
+    #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
+    #y = layers.LeakyReLU()(y)
+    #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
+    #y = layers.LeakyReLU()(y)
     y_shape = y.shape
     
     y = layers.Flatten()(y)
@@ -50,13 +50,13 @@ def build_vae(x_shape, z_dimension):
     
     y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
     y = layers.LeakyReLU()(y)
-    y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-    y = layers.LeakyReLU()(y)
     #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
     #y = layers.LeakyReLU()(y)
-    y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-    y = layers.LeakyReLU()(y)
-    y = layers.Conv2DTranspose(x_shape[2], 3, strides=2, padding="same")(y)
+    #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
+    #y = layers.LeakyReLU()(y)
+    #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
+    #y = layers.LeakyReLU()(y)
+    y = layers.Conv2DTranspose(x_shape[3], 3, strides=2, padding="same")(y)
     y = layers.Activation('sigmoid')(y)
 
     encoder = models.Model(inputs, [z_mean, z_log_var, z], name ='encoder')
@@ -65,7 +65,6 @@ def build_vae(x_shape, z_dimension):
     vae = models.Model(inputs, outputs, name = 'vae')
 
     return encoder, decoder, vae
-import argparse
 
 def main():
     
@@ -74,7 +73,8 @@ def main():
     opt.add_argument('--z',  dest='z_dim', type=int, default=100, required=False, help='Latent space dimension. ex) 100' )
     argv = opt.parse_args()
     
-    encoder, decoder, vae = build_vae((argv.x_size, argv.x_size, 3), argv.z_dim)
+    x_shape = (500,28,28,3)
+    encoder, decoder, vae = build_vae(x_shape, argv.z_dim)
     
     encoder.summary()
     decoder.summary()

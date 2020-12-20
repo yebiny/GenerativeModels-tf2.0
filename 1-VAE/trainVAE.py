@@ -1,16 +1,18 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from models import *
 from basic import *
-
+from drawTools import *
 class TrainVAE():
 
-    def __init__(self, x_data, y_data, latent_dim,  save_path,  ckp='y'):
-        self.x_data, self.y_data = x_data, y_data
+    def __init__(self, x_train, x_valid, save_path, latent_dim=100, ckp='y'):
+        self.x_train = x_train
+        self.x_valid = x_valid
        
-        encoder, decoder, vae = build_vae(x_data.shape[1:], latent_dim)
+        encoder, decoder, vae = build_vae(x_train.shape, latent_dim)
         self.encoder = encoder
         self.decoder = decoder
         self.vae = vae
@@ -25,7 +27,7 @@ class TrainVAE():
     def get_rec_loss(self, inputs, predictions):
         rec_loss = tf.keras.losses.binary_crossentropy(inputs, predictions)
         rec_loss = tf.reduce_mean(rec_loss)
-        rec_loss *= self.x_data.shape[1]*self.x_data.shape[2]
+        rec_loss *= self.x_train.shape[1]*self.x_train.shape[2]
         return rec_loss
     
     def get_kl_loss(self, z_log_var, z_mean):
@@ -73,14 +75,15 @@ class TrainVAE():
         # Update valid loss 
         valid_loss(loss)
 
+    def make_dataset(self, batch_size):
+        train_ds = tf.data.Dataset.from_tensor_slices((self.x_train, self.x_train)).batch(batch_size)
+        valid_ds = tf.data.Dataset.from_tensor_slices((self.x_valid, self.x_valid)).batch(batch_size)
+        return train_ds, valid_ds
 
-    def train(self, epochs, batch_size, init_lr=0.001):
+
+    def train(self, epochs, batch_size=32, init_lr=0.001):
      
-        x_train, x_valid, _, _, _, _ = data_generator(self.x_data, self.y_data, batch_size)
-        x_train, x_valid = x_train/255, x_valid/255
-        
-        train_ds = tf.data.Dataset.from_tensor_slices((x_train, x_train)).batch(batch_size)
-        valid_ds = tf.data.Dataset.from_tensor_slices((x_valid, x_valid)).batch(batch_size)
+        train_ds, valid_ds = self.make_dataset(batch_size) 
 
         csv_logger = tf.keras.callbacks.CSVLogger(self.save_path+'/training.log')
         optimizer = tf.keras.optimizers.Adam(init_lr)
@@ -109,7 +112,7 @@ class TrainVAE():
             optimizer.learning_rate = lr
             
             # Plot reconstruct image per 10 epochs
-            draw_recimg(self.vae, x_valid, epoch, 5, self.save_path)
+            plot_rec_images(self.vae, self.x_valid[:100], save=self.save_path+'recImg_%i'%epoch)
             
             # Save checkpoint if best v_loss 
             if v_loss < best_loss:
@@ -126,38 +129,3 @@ class TrainVAE():
             train_loss.reset_states()   
             valid_loss.reset_states()
             
-def main():
-    opt = argparse.ArgumentParser()
-    opt.add_argument('-d',  dest='data_path', type=str, required=True, help='datasets path')
-    opt.add_argument('-s',  dest='save_path', type=str, required=True, help='save path')
-    opt.add_argument('-z',  dest='z_dim', type=int, default=100, required=False, help='latent space dimension')
-    opt.add_argument('-e',  dest='epochs', type=int, default=3000, required=False, help='epochs')
-    opt.add_argument('-b',  dest='batch_size', type=int, default=256, required=False, help='batch size')
-    argv = opt.parse_args()
-
-    if_exist(argv.save_path)
-    if_not_make(argv.save_path)
-    
-    print('* Save at ', argv.save_path)
-    print('* LAT_DIM, EPOCHS, BATCH_SIZE: ', argv.z_dim, argv.epochs, argv.batch_size)
-    
-    log  = '''
-    Dataset : {DATASET} 
-    Save path : {SAVE_PATH}
-    Latent dimension : {LAT_DIM}
-    Epochs : {EPOCHS}
-    Batch size : {BATCH_SIZE}
-    '''.format(DATASET=argv.data_path, SAVE_PATH=argv.save_path, LAT_DIM=argv.z_dim, EPOCHS=argv.epochs, BATCH_SIZE=argv.batch_size)
-    with open(argv.save_path+'/log.txt', 'a') as log_file:
-        log_file.write(log)
-    with open(argv.save_path+'/log.txt', 'w') as log_file:
-        log_file.write(log)
-    
-
-    x_data, y_data = np.load('%s/x_data.npy'%argv.data_path), np.load('%s/y_data.npy'%argv.data_path)
-    tVAE = TrainVAE(x_data, y_data, argv.z_dim, argv.save_path)
-    tVAE.vae.summary()
-    tVAE.train(argv.epochs, argv.batch_size)
-
-if __name__ == '__main__':
-    main()
