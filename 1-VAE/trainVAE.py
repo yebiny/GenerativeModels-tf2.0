@@ -2,10 +2,23 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
 from models import *
-from basic import *
 from drawTools import *
+
+def reduce_lr(pre_v_loss, v_loss, count, lr, patience, factor, min_lr):
+    if v_loss < pre_v_loss:
+        count = 0
+    else:
+        count += 1
+        if count >= patience:
+            lr = lr*factor
+            if lr < min_lr:
+                lr = min_lr
+            count = 0
+            print('reduce learning rate..', lr)
+    return count, lr
+
+
 class TrainVAE():
 
     def __init__(self, x_train, x_valid, save_path, latent_dim=100, ckp='y'):
@@ -128,4 +141,5 @@ class TrainVAE():
             # Reset loss
             train_loss.reset_states()   
             valid_loss.reset_states()
-            
+           
+     
