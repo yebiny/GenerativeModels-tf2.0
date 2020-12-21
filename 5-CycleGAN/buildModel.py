@@ -74,11 +74,11 @@ class BuildCycleGAN():
         cycle_b = gene_ab(img_b)
         cycle_a = gene_ba(img_a)
        
-        disc_a.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
-        disc_b.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
-        
-        disc_a.trainable=False
-        disc_b.trainable=False
+        #disc_a.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
+        #disc_b.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
+        #
+        #disc_a.trainable=False
+        #disc_b.trainable=False
 
         valid_a = disc_a(fake_a)
         valid_b = disc_b(fake_b)

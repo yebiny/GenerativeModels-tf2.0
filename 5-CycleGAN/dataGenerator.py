@@ -19,10 +19,13 @@ class DataLoader():
         image = (image / 127.5) - 1
         return image
 
-    def random_jitter(self, image):
+    def resize(self, image, height, width):
         # resizing
-        image = tf.image.resize(image, [self.img_height+20, self.img_width+20],
+        image = tf.image.resize(image, [height, width],
                               method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        return image
+
+    def random_jitter(self, image):
 
         # randomly cropping
         image = tf.image.random_crop(image, size=[self.img_height, self.img_width, 3])
@@ -33,11 +36,13 @@ class DataLoader():
         return image
 
     def preprocess_image_train(self, image, label):
+        image = self.resize(image, self.img_height+10, self.img_width+10)
         image = self.random_jitter(image)
         image = self.normalize(image)
         return image
-
+    
     def preprocess_image_test(self, image, label):
+        image = self.resize(image, self.img_height, self.img_width)
         image = self.normalize(image)
         return image
     
@@ -45,19 +50,19 @@ class DataLoader():
         AUTOTUNE = tf.data.experimental.AUTOTUNE
         train_a = self.train_a.map(
             self.preprocess_image_train, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size)
+            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
 
         train_b = self.train_b.map(
             self.preprocess_image_train, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size)
+            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
 
         test_a = self.test_a.map(
             self.preprocess_image_test, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size)
+            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
 
         test_b = self.test_b.map(
             self.preprocess_image_test, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size)
+            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
 
         return train_a, train_b, test_a, test_b
 

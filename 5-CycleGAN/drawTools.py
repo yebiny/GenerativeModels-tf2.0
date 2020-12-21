@@ -20,3 +20,5 @@ def generate_img(model_ab, model_ba, input_a, input_b, save=None):
         plt.show()
     else:
         plt.savefig(save)
+
+    plt.close('all')
