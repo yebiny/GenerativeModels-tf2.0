@@ -1,7 +1,5 @@
 import os, sys
-sys.path.append("../")
 import argparse
-
 from getData import *
 from trainVAE import *
 
@@ -9,11 +7,11 @@ def check_args(args):
     if not os.path.exists(args.save_path): os.makedirs(args.save_path)
 
     if args.data =='mnist':
-        x_train, _ = get_mnist(0)
+        x_train, _ = get_mnist()
     elif args.data =='fmnist':
-        x_train, _ = get_fashion_mnist(0)
+        x_train, _ = get_fashion_mnist()
     elif args.data =='cifar':
-        x_train, _ = get_cifar10(0)
+        x_train, _ = get_cifar10()
 
     return x_train
             
