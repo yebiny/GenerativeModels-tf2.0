@@ -4,19 +4,18 @@ from dataGenerator import *
 from drawTools import *
 from tensorflow.keras.utils import plot_model
 
-class TrainCycleGAN():
-    def __init__(self, dataset, save_path, img_shape=(128,128,3), batch_size=64):
+class CycleGAN():
+    def __init__(self, input_shape, gene_n_filters, disc_n_filters, save_path):
         
         # set init vars
-        self.dataset = dataset
-        self.img_shape = img_shape
-        self.batch_size = batch_size
-        self.disc_patch = (8, 8, 1)
+        self.input_shape = input_shape
+        patch=int(self.input_shape[0]/2**4)
+        self.disc_patch = (patch, patch, 1)
         self.save_path = save_path 
        
-        # set cyclegan
-        CycleGAN = BuildCycleGAN(img_shape)
-        self.gene_ab, self.gene_ba, self.disc_a, self.disc_b, self.cyclegan = CycleGAN.build_cyclegan()
+        # build cyclegan
+        builder = BuildCycleGAN(input_shape, gene_n_filters, disc_n_filters)
+        self.gene_ab, self.gene_ba, self.disc_a, self.disc_b, self.cyclegan = builder.build_cyclegan()
         self.cyclegan.summary()
         
         # draw model images
@@ -24,41 +23,38 @@ class TrainCycleGAN():
         plot_model(self.disc_a, to_file=save_path+'/disc.png', show_shapes=True)        
         plot_model(self.cyclegan, to_file=save_path+'/cyclegan.png', show_shapes=True)        
     
-    def make_datasets(self, buffer_size=1000):
-        loader = DataLoader(self.dataset, self.img_shape, self.batch_size, buffer_size)
-        train_a, train_b, test_a, test_b = loader.generate()
-        return train_a, train_b, test_a, test_b
 
-    def make_constant(self):
-        y1 = np.ones((self.batch_size, ) + self.disc_patch)
-        y0 = np.zeros((self.batch_size, ) + self.disc_patch)
-        return y0, y1
-
-    def compile(self, optimizer=tf.optimizers.Adam(0.0002, 0.5), lambda_cycle=10.0):
-        lambda_id = 0.9*lambda_cycle
+    def compile(self, optimizer, lambda_valid, lambda_cycle, lambda_ident):
         
         self.disc_a.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
         self.disc_b.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
         self.disc_a.trainable=False
         self.disc_b.trainable=False
         self.cyclegan.compile(loss = ['mse', 'mse', 'mae', 'mae', 'mae', 'mae'],
-                              loss_weights=[1,1, lambda_cycle, lambda_cycle, lambda_id, lambda_id],
+                              loss_weights=[lambda_valid, lambda_valid, 
+                                            lambda_cycle, lambda_cycle, 
+                                            lambda_ident, lambda_ident],
                               optimizer=optimizer)        
+    
+    def make_constant(self, batch_size):
+        y1 = np.ones((batch_size, ) + self.disc_patch)
+        y0 = np.zeros((batch_size, ) + self.disc_patch)
+        return y0, y1
         
-    def train(self, epochs):
+    def train(self, data_loader, epochs, batch_size):
         
         # set data
-        train_a, train_b, test_a, test_b = self.make_datasets()
+        train_a, train_b, test_a, test_b = data_loader.generate(batch_size)
         sample_a, sample_b = next(iter(train_a)), next(iter(train_b))
-        y0, y1 = self.make_constant()
+        y0, y1 = self.make_constant(batch_size)
         
         # train
-        history = {'epoch':[], 'disc_loss':[], 'gene_loss':[]}
+        history = {'epoch':[], 'd_loss':[], 'g_loss':[]}
         generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, self.save_path+'/geneImg_0' )        
         for epoch in range(1, epochs+1):
             
             gene_loss=disc_loss=0
-            print("* epoch {}/{}".format(epoch, epochs)))
+            print("* epoch {}/{}".format(epoch, epochs))
             for batch_idx, (imgs_a, imgs_b) in enumerate(tf.data.Dataset.zip((train_a, train_b))):
             
                 fake_b = self.gene_ab.predict(imgs_a)
@@ -81,19 +77,23 @@ class TrainCycleGAN():
                 g_loss = self.cyclegan.train_on_batch([imgs_a, imgs_b],
                                                      [y1, y1, imgs_a, imgs_b, imgs_a, imgs_b]) 
                 
-                disc_loss = disc_loss + d_loss
-                gene_loss = gene_loss + g_loss
+                disc_loss = disc_loss + d_loss[0]
+                gene_loss = gene_loss + g_loss[0]
 
-            print('* d_loss: ', disc_loss, 'g_loss: ' , g_loss)
+            print('datasize: ', batch_idx*batch_size)
+            print('* d_loss: ', disc_loss, 'g_loss: ' , gene_loss)
             history['epoch'].append(epoch)
             history['d_loss'].append(disc_loss)
             history['g_loss'].append(gene_loss)
             generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, 
                          self.save_path+'/geneImg_%i_%i'%(epoch, batch_idx) )        
 
-            self.disc_a.save(self.save_path+'/disc_a_%i.h5'%epoch)  
-            self.disc_b.save(self.save_path+'/disc_b_%i.h5'%epoch)  
-            self.gene_ab.save(self.save_path+'/gene_ab_%i.h5'%epoch)  
-            self.gene_ba.save(self.save_path+'/gene_ba_%i.h5'%epoch) 
-
+            self.save()
+        
         return history
+    
+    def save(self):
+        self.disc_a.save(self.save_path+'/disc_a.h5')  
+        self.disc_b.save(self.save_path+'/disc_b.h5')  
+        self.gene_ab.save(self.save_path+'/gene_ab.h5')  
+        self.gene_ba.save(self.save_path+'/gene_ba.h5') 

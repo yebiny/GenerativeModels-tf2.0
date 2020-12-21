@@ -2,13 +2,12 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 class DataLoader():
-    def __init__(self, dataset, img_shape = (128, 128, 3), batch_size = 1, buffer_size = 1000):
+    def __init__(self, data_name, img_shape, buffer_size):
         self.buffer_size=buffer_size
-        self.batch_size=batch_size
         self.img_width=img_shape[0]
         self.img_height=img_shape[1]
         
-        dataset, metadata = tfds.load('cycle_gan/%s'%dataset,
+        dataset, metadata = tfds.load('cycle_gan/%s'%data_name,
                               with_info=True, as_supervised=True)
 
         self.train_a, self.train_b = dataset['trainA'], dataset['trainB']
@@ -46,23 +45,23 @@ class DataLoader():
         image = self.normalize(image)
         return image
     
-    def generate(self):
+    def generate(self, batch_size):
         AUTOTUNE = tf.data.experimental.AUTOTUNE
         train_a = self.train_a.map(
             self.preprocess_image_train, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
+            self.buffer_size).batch(batch_size, drop_remainder=True).prefetch(1)
 
         train_b = self.train_b.map(
             self.preprocess_image_train, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
+            self.buffer_size).batch(batch_size, drop_remainder=True).prefetch(1)
 
         test_a = self.test_a.map(
             self.preprocess_image_test, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
+            self.buffer_size).batch(batch_size, drop_remainder=True).prefetch(1)
 
         test_b = self.test_b.map(
             self.preprocess_image_test, num_parallel_calls=AUTOTUNE).cache().shuffle(
-            self.buffer_size).batch(self.batch_size, drop_remainder=True).prefetch(1)
+            self.buffer_size).batch(batch_size, drop_remainder=True).prefetch(1)
 
         return train_a, train_b, test_a, test_b
 

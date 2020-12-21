@@ -1,6 +1,6 @@
 import os, sys
 import argparse
-from train import *
+from cycleGAN import *
  
 def parse_args():
     opt = argparse.ArgumentParser(description="==== GAN with tensorflow2.x ====")
@@ -17,16 +17,31 @@ def check_args(args):
     if not os.path.exists(args.save_path): os.makedirs(args.save_path)
     
 def main():
-    
+   
+    IMG_SHAPE=(128,128,3)
+    BUFFER_SIZE=1000
+
     args=parse_args()
     check_args(args)
     
+    # make dataset
+    data_loader = DataLoader(data_name=args.data, 
+                             img_shape=IMG_SHAPE, 
+                             buffer_size=BUFFER_SIZE)
     # Make model
-    cycle_gan = TrainCycleGAN(args.data, args.save_path)
+    model = CycleGAN(input_shape=IMG_SHAPE, 
+                     gene_n_filters=32,
+                     disc_n_filters=32,
+                     save_path=args.save_path)
     # Compile model
-    cycle_gan.compile()
+    model.compile(optimizer=tf.optimizers.Adam(0.0002, 0.5), 
+                  lambda_valid=1, 
+                  lambda_cycle=10, 
+                  lambda_ident=9)
+  
     # Train model
-    history = cycle_gan.train(args.epochs)
+    history = model.train(data_loader, epochs=args.epochs, batch_size=1)
+    
     # Plot loss
     plot_loss(history, args.save_path+'/loss.png')
 

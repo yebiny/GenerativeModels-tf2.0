@@ -5,10 +5,10 @@ from tensorflow.keras import layers, activations, models
 
 class BuildCycleGAN():
     
-    def __init__(self, input_shape, df=32, gf=64):
+    def __init__(self, input_shape, gene_n_filters, disc_n_filters):
         self.input_shape = input_shape
-        self.df = df
-        self.gf = gf
+        self.df = gene_n_filters
+        self.gf = disc_n_filters
         
     def conv2d(self, layer_input, filters, f_size=4, nomalization=True):
         d = layers.Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
