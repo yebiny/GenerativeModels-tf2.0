@@ -22,3 +22,17 @@ def generate_img(model_ab, model_ba, input_a, input_b, save=None):
         plt.savefig(save)
 
     plt.close('all')
+
+def plot_loss(history, save=None):
+    figure=plt.figure()
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+    plt.xticks(history['epoch'])
+    plt.plot(history['g_loss'], 'y', label='generator loss')
+    plt.plot(history['d_loss'], 'r', label='discriminator loss')
+    plt.legend(loc='upper right')
+
+    if save!=None:
+        plt.savefig(save)
+    else:
+        plt.show()

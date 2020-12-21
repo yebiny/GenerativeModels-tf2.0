@@ -26,9 +26,9 @@ def main():
     # Compile model
     cycle_gan.compile()
     # Train model
-    cycle_gan.train(args.epochs)
+    history = cycle_gan.train(args.epochs)
     # Plot loss
-    #plot_loss(history, args.save_path+'/loss.png')
+    plot_loss(history, args.save_path+'/loss.png')
 
 if __name__=='__main__':
     main()
