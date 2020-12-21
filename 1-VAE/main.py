@@ -1,7 +1,7 @@
 import os, sys
 import argparse
 from getData import *
-from trainVAE import *
+from train import *
 
 def check_args(args):
     if not os.path.exists(args.save_path): os.makedirs(args.save_path)

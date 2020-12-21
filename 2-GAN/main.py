@@ -1,7 +1,7 @@
 import os, sys
 import argparse
 from getData import *
-from trainGAN import *
+from train import *
 
 def parse_args():
     opt = argparse.ArgumentParser(description="==== GAN with tensorflow2.x ====")
