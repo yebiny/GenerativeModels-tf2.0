@@ -50,7 +50,6 @@ class CycleGAN():
         
         # train
         history = {'epoch':[], 'd_loss':[], 'g_loss':[]}
-        generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, self.save_path+'/geneImg_0' )        
         for epoch in range(1, epochs+1):
             
             gene_loss=disc_loss=0
@@ -79,21 +78,23 @@ class CycleGAN():
                 
                 disc_loss = disc_loss + d_loss[0]
                 gene_loss = gene_loss + g_loss[0]
-
-            print('datasize: ', batch_idx*batch_size)
-            print('* d_loss: ', disc_loss, 'g_loss: ' , gene_loss)
+                
+                if batch_idx%10==0:
+                    print('datasize: %i * %i = %i'%(batch_idx, batch_size, batch_idx*batch_size))
+                    print('* d_loss: ', disc_loss, 'g_loss: ' , gene_loss)
+                    generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, 
+                         self.save_path+'/geneImg_%i_%i'%(epoch, batch_idx*batch_size) )        
+            
             history['epoch'].append(epoch)
             history['d_loss'].append(disc_loss)
             history['g_loss'].append(gene_loss)
-            generate_img(self.gene_ab, self.gene_ba, sample_a, sample_b, 
-                         self.save_path+'/geneImg_%i_%i'%(epoch, batch_idx) )        
 
-            self.save()
-        
+            self.save(epoch)
+
         return history
     
-    def save(self):
-        self.disc_a.save(self.save_path+'/disc_a.h5')  
-        self.disc_b.save(self.save_path+'/disc_b.h5')  
-        self.gene_ab.save(self.save_path+'/gene_ab.h5')  
-        self.gene_ba.save(self.save_path+'/gene_ba.h5') 
+    def save(self, index):
+        self.disc_a.save(self.save_path+'/disc_a_%i.h5'%index)  
+        self.disc_b.save(self.save_path+'/disc_b_%i.h5'%index)  
+        self.gene_ab.save(self.save_path+'/gene_ab_%i.h5'%index)  
+        self.gene_ba.save(self.save_path+'/gene_ba_%i.h5'%index) 

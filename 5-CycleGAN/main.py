@@ -9,7 +9,7 @@ def parse_args():
     help='choice among [apple2orange, summer2winter_yosemite, horse2zebra, monet2photo,cezanne2photo, ukiyoe2photo, vangogh2photo,maps, cityscapes, facades, ipohne2dslr_flower]')
     
     opt.add_argument('-e',  dest='epochs', type=int, default=5, help=': number epochs (default: 5)')
-    
+    opt.add_argument('-b', dest='batch_size', type=int, default=32, help=': batch size (default: 32)')
     args = opt.parse_args()
     return args
 
@@ -40,7 +40,7 @@ def main():
                   lambda_ident=9)
   
     # Train model
-    history = model.train(data_loader, epochs=args.epochs, batch_size=1)
+    history = model.train(data_loader, epochs=args.epochs, batch_size=args.batch_size)
     
     # Plot loss
     plot_loss(history, args.save_path+'/loss.png')
