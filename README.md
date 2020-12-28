@@ -1,2 +1,10 @@
 # generativeModels
-Build generative models with CeleBA datasets
+Build generative models
+
+* VAE
+* GAN
+* CGAN
+* StyleGAN
+* CycleGAN
+* SRGAN
+
