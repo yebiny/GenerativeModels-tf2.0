@@ -7,4 +7,5 @@ Build generative models
 * StyleGAN
 * CycleGAN
 * SRGAN
+* BEGAN
 
