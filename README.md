@@ -8,4 +8,5 @@ Build generative models
 * CycleGAN
 * SRGAN
 * BEGAN
+* StarGAN
 
