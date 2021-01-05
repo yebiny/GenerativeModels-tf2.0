@@ -44,7 +44,7 @@ class BuildCycleGAN():
 
         return models.Model(d0, output_img, name=name)
 
-    def build_discriminiator(self, name='D'):
+    def build_discriminator(self, name='D'):
         img = layers.Input(shape=self.input_shape)
         d1 = self.conv2d(img, self.df*1, nomalization=False)
         d2 = self.conv2d(d1, self.df*2)
@@ -55,51 +55,16 @@ class BuildCycleGAN():
                     kernel_size=4, strides=1, padding='same', name='test')(d4)
         return models.Model(img, predict, name=name)
     
-    def build_cyclegan(self, optimizer=tf.optimizers.Adam(0.0002, 0.5)):
-        
-        img_a = layers.Input(shape = self.input_shape, name='input_a')
-        img_b = layers.Input(shape = self.input_shape, name='input_b')
-        
-        disc_a = self.build_discriminiator('D_a')
-        disc_b = self.build_discriminiator('D_b')
-        gene_ab = self.build_generator('G_ab')
-        gene_ba = self.build_generator('G_ba')
-        
-        fake_b = gene_ab(img_a)
-        fake_a = gene_ba(img_b)
-        
-        reco_b = gene_ab(fake_a)
-        reco_a = gene_ba(fake_b)
-        
-        cycle_b = gene_ab(img_b)
-        cycle_a = gene_ba(img_a)
-       
-        #disc_a.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
-        #disc_b.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
-        #
-        #disc_a.trainable=False
-        #disc_b.trainable=False
-
-        valid_a = disc_a(fake_a)
-        valid_b = disc_b(fake_b)
-        
-        cyclegan = models.Model(name='CycleGAN',
-                                inputs=[img_a, img_b], 
-                                outputs=[valid_a, valid_b, 
-                                        reco_a, reco_b,
-                                        cycle_a, cycle_b])
-
-        return gene_ab, gene_ba, disc_a, disc_b, cyclegan
 
 def main():
 
-    input_shape=(128,128,3)
-    CycleGAN = BuildCycleGAN(input_shape)
-    gene_ab, gene_ba, disc_a, disc_b, cyclegan = CycleGAN.build_cyclegan()
+    builder = BuildCycleGAN(input_shape=(128,128,3),
+                            gene_n_filters=32,
+                            disc_n_filters=32)
+    gene = builder.build_generator()
+    disc = builder.build_discriminator()
        
-    gene_ab.summary()
-    disc_a.summary()
-    cyclegan.summary()
-
+    gene.summary()
+    disc.summary()
 if __name__=='__main__':
     main()    
