@@ -4,7 +4,7 @@ import os
 from tensorflow.keras.initializers import RandomNormal
 from tensorflow.keras import layers, models
 
-def build_generator( input_shape
+def build_generator( z_dim
                    , generator_initial_dense_layer_size = (4, 4, 128)
                    , generator_upsample = [2,2, 2,1]
                    , generator_conv_filters = [128,64,32,3]
@@ -16,7 +16,7 @@ def build_generator( input_shape
                    ):
 
     generator_n_layers = len(generator_conv_filters)
-    generator_input = layers.Input(shape=input_shape, name='generator_input')
+    generator_input = layers.Input(shape=(z_dim), name='generator_input')
 
     x = generator_input
     x = layers.Dense(np.prod(generator_initial_dense_layer_size)
