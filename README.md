@@ -4,8 +4,9 @@ Build generative models
 * VAE
 * GAN
 * CGAN
-* StyleGAN
 * CycleGAN
+* WGAN
+* StyleGAN
 * SRGAN
 * BEGAN
 * StarGAN
