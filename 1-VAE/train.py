@@ -1,9 +1,10 @@
+import os, sys
 import tensorflow as tf
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from models import *
-from drawTools import *
+from draw import *
 
 def reduce_lr(pre_v_loss, v_loss, count, lr, patience, factor, min_lr):
     if v_loss < pre_v_loss:
@@ -125,13 +126,14 @@ class TrainVAE():
             optimizer.learning_rate = lr
             
             # Plot reconstruct image per 10 epochs
-            plot_rec_images(self.vae, self.x_valid[:100], save=self.save_path+'recImg_%i'%epoch)
+            plot_rec_images(self.vae, self.x_valid[:100], save='%s/recImg_%i'%(self.save_path, epoch))
             
             # Save checkpoint if best v_loss 
             if v_loss < best_loss:
                 best_loss = v_loss
                 self.checkpoint.save(file_prefix=os.path.join(self.save_path+'/ckp/', 'ckp'))
-            
+                self.save_model()
+
             # Save loss, lerning rate
             print("* %i * loss: %f, v_loss: %f,  best_loss: %f, l_rate: %f, lr_count: %i"%(epoch, t_loss, v_loss, best_loss, l_rate, count ))
             df = pd.DataFrame({'epoch':[epoch], 'loss':[t_loss], 'v_loss':[v_loss], 'best_loss':[best_loss], 'l_rate':[l_rate]  } )
@@ -142,4 +144,7 @@ class TrainVAE():
             train_loss.reset_states()   
             valid_loss.reset_states()
            
-     
+    def save_model(self):
+        self.encoder.save('%s/encoder.h5'%self.save_path)
+        self.decoder.save('%s/decoder.h5'%self.save_path)
+        self.vae.save('%s/vae.h5'%self.save_path)

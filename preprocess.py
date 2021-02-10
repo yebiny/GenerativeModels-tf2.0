@@ -9,7 +9,6 @@ def get_fashion_mnist():
     x_train = x_train.reshape(-1, 28, 28, 1)
     
     y_train = to_categorical(y_train, num_classes=max(y_train)+1)
-    print(x_train.shape, y_train.shape) 
     
     return x_train, y_train
 
@@ -19,7 +18,6 @@ def get_mnist():
     x_train = x_train.reshape(-1, 28, 28, 1)
     
     y_train = to_categorical(y_train, num_classes=max(y_train)+1)
-    print(x_train.shape, y_train.shape) 
    
     return x_train, y_train
 
@@ -29,6 +27,5 @@ def get_cifar10():
     
     y_train = np.reshape(y_train, len(y_train))
     y_train = to_categorical(y_train, num_classes=max(y_train)+1)
-    print(x_train.shape, y_train.shape) 
 
     return x_train, y_train 
