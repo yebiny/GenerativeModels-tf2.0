@@ -1,8 +1,7 @@
-
-# To plot pretty figures
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 mpl.rc('axes', labelsize=14)
 mpl.rc('xtick', labelsize=12)
 mpl.rc('ytick', labelsize=12)
@@ -24,12 +23,12 @@ def plot_multiple_images(images, n_cols=None, save=None):
 
 def plot_generated_images(generator, seed, save=None):
     generated_images = generator.predict(seed)
-    generated_images = (generated_images+1)/2
+    #generated_images = (generated_images+1)/2
     plot_multiple_images(generated_images, 8, save) 
 
 def plot_rec_images(reconstructor, data, save=None):
     reconstructed_images = reconstructor.predict(data)
-    reconstructed_images = (reconstructed_images+1)/2
+    #reconstructed_images = (reconstructed_images+1)/2
     plot_multiple_images(reconstructed_images, 8, save)
 
 def plot_loss(history, save=None):
