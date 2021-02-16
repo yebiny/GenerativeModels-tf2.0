@@ -67,43 +67,39 @@ def build_generator( z_dim
     
     return generator
 
+
+
 def build_critic( input_shape 
-                , critic_conv_filters = [32,64,128,128]
-                , critic_conv_kernel_size = [5,5,5,5]
-                , critic_conv_strides = [2,2,2,1]
-                , critic_batch_norm_momentum = None
-                , critic_activation = 'leaky_relu'
-                , critic_dropout_rate = None
-                , critic_weight_init= RandomNormal(mean=0., stddev=0.02)
+                , conv_filters = [32,64,128,128]
+                , conv_strides = [2,2,2,1]
+                , conv_kernel_size = [5,5,5,5]
+                , weight_init= RandomNormal(mean=0., stddev=0.02)
+                , bn_momentum = None
+                , dropout_rate = None
                 ):
 
-        critic_n_layers=len(critic_conv_filters)
-        critic_input = layers.Input(shape=input_shape, name='critic_input')
-
-        x = critic_input
-        for i in range(critic_n_layers):
+        def _critic_conv(x, filters, kernel_size, strides, weight_init, bn_momentum, dropout_rate):
             
-            x = layers.Conv2D(
-                filters = critic_conv_filters[i]
-                , kernel_size = critic_conv_kernel_size[i]
-                , strides = critic_conv_strides[i]
-                , padding = 'same'
-                , name = 'critic_conv_' + str(i)
-                , kernel_initializer = critic_weight_init
-                )(x)
-            
-            if critic_batch_norm_momentum and i > 0:
-                x = layers.BatchNormalization(momentum = critic_batch_norm_momentum)(x)
-
+            x = layers.Conv2D( filters = filters
+                             , strides = strides
+                             , kernel_size = kernel_size
+                             , kernel_initializer = weight_init
+                             , padding = 'same'
+                             )(x)
+            if bn_momentum: x = layers.BatchNormalization(momentum = batch_norm_momentum)(x)
             x = layers.LeakyReLU(alpha = 0.2)(x)
+            if dropout_rate: x = layers.Dropout(rate =dropout_rate)(x)
 
-            if critic_dropout_rate:
-                x = layers.Dropout(rate = critic_dropout_rate)(x)
+            return x
+
+        critic_input = layers.Input(shape=input_shape, name='critic_input')
+        
+        x = critic_input
+        for filters, kernel_size, strides in zip(conv_filters, conv_kernel_size, conv_strides):
+            x = _critic_conv(x, filters, kernel_size, strides, weight_init, bn_momentum, dropout_rate)    
 
         x = layers.Flatten()(x)
-
-        critic_output = layers.Dense(1, activation=None
-                        , kernel_initializer = critic_weight_init)(x)
+        critic_output = layers.Dense(1, kernel_initializer=weight_init)(x)
 
         return models.Model(critic_input, critic_output)
 
