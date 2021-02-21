@@ -3,9 +3,9 @@ tf.random.Generator = None
 import tensorflow_addons as tfa
 from tensorflow.keras import layers, activations, models
 
-class BuildCycleGAN():
+class BuildModel():
     
-    def __init__(self, input_shape, gene_n_filters, disc_n_filters):
+    def __init__(self, input_shape, gene_n_filters=32, disc_n_filters=32):
         self.input_shape = input_shape
         self.df = gene_n_filters
         self.gf = disc_n_filters
@@ -58,7 +58,7 @@ class BuildCycleGAN():
 
 def main():
 
-    builder = BuildCycleGAN(input_shape=(128,128,3),
+    builder = BuildModel(input_shape=(128,128,3),
                             gene_n_filters=32,
                             disc_n_filters=32)
     gene = builder.build_generator()
