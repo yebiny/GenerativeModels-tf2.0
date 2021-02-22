@@ -3,11 +3,9 @@ from tensorflow.keras import backend as K
 from tensorflow.keras import layers, models
 
 
-def build_cgan(x_shape, y_shape, noise_dim):
-    w = x_shape[1] 
-    h = x_shape[2]
-    d = x_shape[3]
-    label_dim = y_shape[-1]
+
+def build_generator(img_shape, label_dim, noise_dim):
+    w, h, d = img_shape[0], img_shape[1], img_shape[2] 
 
     # Generator
     input_noise = layers.Input(shape=[noise_dim,], name='Input_noise')
@@ -22,7 +20,12 @@ def build_cgan(x_shape, y_shape, noise_dim):
     generated_image = layers.Conv2DTranspose(d, kernel_size=5, strides=2, padding="SAME", activation="tanh", name='generated_image')(y)
     
     generator=models.Model(inputs=[input_noise, input_label], outputs=[generated_image], name='Generator')
-    
+
+    return generator
+
+def build_discriminator(img_shape, label_dim):
+    w, h, d = img_shape[0], img_shape[1], img_shape[2] 
+
     # Discriminator 
     def expand_label_input(x):
            x = K.expand_dims(x,axis=1)
@@ -31,33 +34,35 @@ def build_cgan(x_shape, y_shape, noise_dim):
            return x
     
     input_image = layers.Input(shape=[w,h,d], name='Input_image')
+    conv_image = layers.Conv2D( 64, kernel_size=5, strides=2, padding="SAME"
+                     , activation=layers.LeakyReLU(0.2))(input_image)
+    input_label = layers.Input(shape=[label_dim,], name='Input_label')
     expand_label = layers.Lambda(expand_label_input)(input_label)
     
-    y = layers.Conv2D(64, kernel_size=5, strides=2, padding="SAME", activation=layers.LeakyReLU(0.2))(input_image)
-    y = layers.concatenate([y, expand_label], axis=3) 
-    y = layers.Conv2D(128, kernel_size=5, strides=2, padding="SAME", activation=layers.LeakyReLU(0.2))(y)
+    
+    y = layers.concatenate([conv_image, expand_label], axis=3) 
+    y = layers.Conv2D( 128, kernel_size=5, strides=2, padding="SAME"
+                     , activation=layers.LeakyReLU(0.2))(y)
     y = layers.Dropout(0.4)(y)
     y = layers.Flatten()(y)
     decision = layers.Dense(1, activation="sigmoid", name='Decision')(y)
     
     discriminator=models.Model(inputs=[input_image, input_label], outputs=[decision], name='Discriminator')
 
-    generated_images = generator([input_noise, input_label])
-    decision = discriminator([generated_images, input_label])
-    cgan = models.Model(inputs=[input_noise, input_label], outputs=[decision], name='CGAN')
-
-    return cgan, generator, discriminator
+    return discriminator
 
 def main():
-    x_shape=(1, 28, 28,1)
-    y_shape=(1,10)
-    noise_dim=100
-
-    cgan, generator, discriminator  = build_cgan(x_shape, y_shape, noise_dim)
     
-    generator.summary()
-    discriminator.summary()
-    cgan.summary()
+    IMG_SHAPE=(28, 28, 1)
+    LABEL_DIM=10
+    NOISE_DIM=100
+    
+    gene = build_generator( IMG_SHAPE, LABEL_DIM, NOISE_DIM )
+    disc = build_discriminator( IMG_SHAPE, LABEL_DIM )
+
+    
+    gene.summary()
+    discsummary()
 
 if __name__=='__main__':
     main()
