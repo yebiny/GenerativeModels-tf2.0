@@ -17,15 +17,15 @@ class GAN():
     def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
         
         self.disc.compile(loss='binary_crossentropy', optimizer=optimizer)
-        self.disc.trainable = False
+        self.gene.compile(loss='binary_crossentropy', optimizer=optimizer)
         
+        self.disc.trainable = False
         input_noise = layers.Input(shape=self.noise_dim, name='input_noise')
         fake_img = self.gene(input_noise)
         decision = self.disc(fake_img)
         
         self.gan = models.Model(inputs=input_noise, outputs=decision)
         self.gan.compile(loss='binary_crossentropy', optimizer=optimizer)
-        self.disc.trainable = True
 
     def _make_datasets(self, x_data, batch_size):
         dataset = tf.data.Dataset.from_tensor_slices(x_data).shuffle(1)
@@ -59,7 +59,7 @@ class GAN():
                 
                 # phase 1 - training the discriminator
                 noises = self._make_random_noises(batch_size)
-                fake_imgs = self.gene.predict(noises)
+                fake_imgs = self.gene.predict_on_batch(noises)
                 
                 self.disc.trainable = True
                 d_loss_real = self.disc.train_on_batch(real_imgs, y1)
