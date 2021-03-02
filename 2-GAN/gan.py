@@ -103,12 +103,12 @@ class GAN():
             plt.savefig(save_path)
         else: plt.show()
 
-    def plot_model(self, save_path):
+    def plot_model(self, save_path='.'):
         plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
         plot_model(self.gene, to_file=self.save_path+'/gene.png',show_shapes=True)
         plot_model(self.disc, to_file=self.save_path+'/disc.png',show_shapes=True)
 
-    def save_model(self, save_path):
+    def save_model(self, save_path='.'):
         self.gan.save('%s/gan.h5'%save_path)
         self.gene.save('%s/gene.h5'%save_path)
         self.disc.save('%s/disc.h5'%save_path)
