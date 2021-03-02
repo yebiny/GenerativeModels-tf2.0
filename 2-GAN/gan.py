@@ -33,44 +33,48 @@ class GAN():
         return dataset
 
     def _make_constants(self, size):
-        y0 = tf.constant([[0.]] * size)
-        y1 = tf.constant([[1.]] * size)
+        zeros = tf.constant([[0.]] * size)
+        ones = tf.constant([[1.]] * size)
         seed = tf.random.normal(shape=[size, self.noise_dim])
-        return y0, y1, seed
+        return zeros, ones, seed
    
     def _make_random_noises(self, size):
         random_noises =  tf.random.normal(shape=[size, self.noise_dim])
         return random_noises
     
 
-    def train(self, x_train, epochs=1, batch_size=16):
+    def train( self
+             , x_data
+             , epochs=1
+             , batch_size=32
+             , save_path=None):
         
         # set data
-        train_ds = self._make_datasets(x_train, batch_size)
-        y0, y1, seed_noises = self._make_constants(batch_size)
+        train_ds = self._make_datasets(x_data, batch_size)
+        zeros, ones, seed_noises = self._make_constants(batch_size)
         
         # epoch
         history = {'d_loss':[], 'g_loss':[]}
         for epoch in range(1, 1+epochs):
-            for key in history: history[key].append(0)
+            for h in history: history[h].append(0)
         
             # batch-trainset
             for real_imgs in train_ds:
                 
                 # phase 1 - training the discriminator
-                noises = self._make_random_noises(batch_size)
-                fake_imgs = self.gene.predict_on_batch(noises)
+                rnd_noises = self._make_random_noises(batch_size)
+                fake_imgs = self.gene.predict_on_batch(rnd_noises)
                 
                 self.disc.trainable = True
-                d_loss_real = self.disc.train_on_batch(real_imgs, y1)
-                d_loss_fake = self.disc.train_on_batch(fake_imgs, y0)
+                d_loss_real = self.disc.train_on_batch(real_imgs, ones)
+                d_loss_fake = self.disc.train_on_batch(fake_imgs, zeros)
                 d_loss = (0.5*d_loss_real) + (0.5*d_loss_fake)
                 
                 # phase 2 - training the generator
-                noises = self._make_random_noises(batch_size)
+                rnd_noises = self._make_random_noises(batch_size)
                 
                 self.disc.trainable = False
-                g_loss = self.gan.train_on_batch(noises , y1)
+                g_loss = self.gan.train_on_batch(rnd_noises , ones)
                 
                 history['d_loss'][-1]+=d_loss
                 history['g_loss'][-1]+=g_loss
@@ -99,13 +103,15 @@ class GAN():
             plt.savefig(save_path)
         else: plt.show()
 
+    def plot_model(self, save_path):
+        plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
+        plot_model(self.gene, to_file=self.save_path+'/gene.png',show_shapes=True)
+        plot_model(self.disc, to_file=self.save_path+'/disc.png',show_shapes=True)
 
     def save_model(self, save_path):
         self.gan.save('%s/gan.h5'%save_path)
         self.gene.save('%s/gene.h5'%save_path)
         self.disc.save('%s/disc.h5'%save_path)
 
-    def plot_model(self, save_path):
-        plot_model(self.gan, to_file=self.save_path+'/gan.png', show_shapes=True)
-        plot_model(self.gene, to_file=self.save_path+'/gene.png',show_shapes=True)
-        plot_model(self.disc, to_file=self.save_path+'/disc.png',show_shapes=True)
+    def load_weights(self, weight_path):
+        self.cgan.load_weights(weight_path)

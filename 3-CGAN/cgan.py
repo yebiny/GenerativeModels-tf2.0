@@ -7,29 +7,29 @@ import matplotlib.pyplot as plt
 
 class CGAN():
     def __init__( self, generator, discriminator
-                , img_shape, label_dim, noise_dim):
+                , img_shape, noise_dim, label_dim):
     
         self.name = 'cGAN'
         self.gene = generator
         self.disc = discriminator
         self.img_shape = img_shape
-        self.label_dim = label_dim
         self.noise_dim = noise_dim
+        self.label_dim = label_dim
 
     def compile(self, optimizer=Adam(lr=0.0002, beta_1=0.5, beta_2=0.999, epsilon=10e-8)):
        
         self.disc.compile(loss='binary_crossentropy', optimizer=optimizer)
-        self.disc.trainable = False
+        self.gene.compile(loss='binary_crossentropy', optimizer=optimizer)
         
+        self.disc.trainable = False
         input_noise = layers.Input(shape=self.noise_dim, name='input_noise')
         input_label = layers.Input(shape=self.label_dim, name='Input_label')
-        
         fake_img = self.gene([input_noise, input_label])
         decision = self.disc([fake_img, input_label])
+        
         self.cgan = models.Model( inputs=[input_noise, input_label]
                                 , outputs=[decision])
         self.cgan.compile(loss="binary_crossentropy", optimizer=optimizer)
-        self.disc.trainable=True
 
     def _make_datasets(self, x_data, y_data, batch_size):
         dataset = tf.data.Dataset.from_tensor_slices((x_data, y_data)).shuffle(1)
@@ -37,12 +37,12 @@ class CGAN():
         return dataset
 
     def _make_constants(self, batch_size):
-        y0 = tf.constant([[0.]] * batch_size)
-        y1 = tf.constant([[1.]] * batch_size)
+        zeros = tf.constant([[0.]] * batch_size)
+        ones = tf.constant([[1.]] * batch_size)
         seed_noises = tf.random.normal(shape=[6*self.label_dim, self.noise_dim])
         seed_labels = [j for i in range(6) for j in range(self.label_dim)]
         seed_labels = to_categorical(seed_labels)
-        return y0, y1, seed_noises, seed_labels
+        return zeros, ones, seed_noises, seed_labels
     
     def _make_randoms(self, batch_size):
         random_noises = tf.random.normal(shape=[batch_size, self.noise_dim])
@@ -50,61 +50,58 @@ class CGAN():
         random_labels = to_categorical(random_labels, self.label_dim)
         return random_noises, random_labels 
 
-    def train(self, x_data, y_data, epochs, batch_size, save_path=None):
+    def train( self
+             , x_data, y_data
+             , epochs=1
+             , batch_size=32
+             , save_path=None):
 
         ## set data ##
-        dataset = self._make_datasets(x_data, y_data, batch_size)
-        
-        ## make constant ##
-        # y1 : all value '0' and shape is (batch_size, )
-        # y2 : all value '1' and shape is (bathc_size, )
-        # seed_noise, seed_label : random values and shape is ( batch_size * z_dimension )
-        y0, y1, seed_noises, seed_labels = self._make_constants(batch_size)
+        train_ds = self._make_datasets(x_data, y_data, batch_size)
+        zeros, ones, seed_noises, seed_labels = self._make_constants(batch_size)
 
-        ## train-epoch  ##
+        ## epoch  ##
         history = {'d_loss':[], 'g_loss':[]}
-        for epoch in range(1, epochs+1):
-            print("Epoch {}/{}".format(epoch, epochs))
+        for epoch in range(1, 1+epochs):
+            for h in history: history[h].append(0)
             
-            ## train-batch ##
-            d_loss, g_loss = 0, 0
-            for real_imgs, labels in dataset:
+            ## batch-trainset ##
+            for real_imgs, labels in train_ds:
 
                 # phase 1 - train discriminator
-                random_noises, _ = self._make_randoms(batch_size) 
-                fake_imgs = self.gene.predict([random_noises, labels])
+                rnd_noises, _ = self._make_randoms(batch_size) 
+                fake_imgs = self.gene.predict_on_batch([noises, labels])
                 
                 self.disc.trainable = True
-                d_loss_real = self.disc.train_on_batch([real_imgs, labels], y1)
-                d_loss_fake = self.disc.train_on_batch([fake_imgs, labels], y0)
-                d_loss = d_loss + (0.5*d_loss_real) + (0.5*d_loss_fake)
+                d_loss_real = self.disc.train_on_batch([real_imgs, labels], ones)
+                d_loss_fake = self.disc.train_on_batch([fake_imgs, labels], zeros)
+                d_loss = (0.5*d_loss_real) + (0.5*d_loss_fake)
 
                 # phase 2 - train generator
-                randome_noises, random_labels = self._make_randoms(batch_size) 
+                rnd_noises, rnd_labels = self._make_randoms(batch_size) 
                 
                 self.disc.trainable = False
-                g_loss = g_loss + self.cgan.train_on_batch([random_noises, random_labels], y1)
+                g_loss = self.cgan.train_on_batch([rnd_noises, rnd_labels], ones)
+                
+                history['d_loss'][-1]+=d_loss 
+                history['g_loss'][-1]+=g_loss 
             
-            ## save results ##
-            print('d_loss:%f, g_loss:%f'%(d_loss, g_loss))
-            history['d_loss'].append(d_loss)
-            history['g_loss'].append(g_loss)
+            print('* epoch: %i, d_loss: %f, g_loss: %f'%( epoch
+                                                        , history['d_loss'][-1]
+                                                        , history['g_loss'][-1]))
 
-            if save_path: save_name = '%s/smaple_%i'%(save_path, epoch)
-            else: save_name = None        
-            self.plot_sample_images( seed_noises, seed_labels, save_name=save_name)
+            self.plot_sample_imgs(seed_noises, seed_labels)
 
         return history
         
 
-    def plot_sample_images(self, noises, labels, save_name=None):
-        r, c = 6, self.label_dim
+    def plot_sample_imgs(self, noises, labels, n=4, save_name=None):
+        
         gen_imgs = self.gene.predict([noises, labels])
-
-        #Rescale images 0 - 1
         gen_imgs = 0.5 * (gen_imgs + 1)
         gen_imgs = np.clip(gen_imgs, 0, 1)
-
+            
+        r, c = n, self.label_dim
         fig, axs = plt.subplots(r, c, figsize=(c,r))
         cnt = 0
         for i in range(r):
@@ -113,11 +110,10 @@ class CGAN():
                 axs[i,j].axis('off')
                 cnt += 1
 
-        if save_name==None:
-            plt.show()
-        else:
+        if save_name!=None:
             fig.savefig(save_name)
-            plt.close()
+        else: plt.show()
+        plt.close()
 
     def plot_model(self, save_path):
         plot_model(self.cgan, to_file='%s/cgan.png'%save_path, show_shapes=True)
@@ -129,5 +125,5 @@ class CGAN():
         self.gene.save('%s/gene.h5'%save_path)
         self.disc.save('%s/disc.h5'%save_path)
 
-    def load_weights(self, file_path):
-       self.cgan.load_weights(file_path)
+    def load_weights(self, weight_path):
+       self.cgan.load_weights(weight_path)
