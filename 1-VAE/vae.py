@@ -78,16 +78,16 @@ class VAE():
     
         return loss, rec_loss, kl_loss
 
-     def _save_best_model(self, mn_loss, history, valid_split, save_path):
-         if valid_split: base_loss=history['v_loss'][-1]
-         else: base_loss = history['loss'][-1]
-         
-         if mn_loss >= base_loss: 
-             self.save_model(save_path)
-             mn_loss = base_loss
-             print('save model')
-         
-         return mn_loss
+    def _save_best_model(self, mn_loss, history, valid_split, save_path):
+        if valid_split: base_loss=history['v_loss'][-1]
+        else: base_loss = history['loss'][-1]
+        
+        if mn_loss >= base_loss: 
+            self.save_model(save_path)
+            mn_loss = base_loss
+            print('save model')
+        
+        return mn_loss
 
     def train(self, x_data, epochs=1, batch_size=16, img_iter=1, valid_split=None, save_path=None):
         
@@ -96,8 +96,7 @@ class VAE():
         loss_name, v_loss_name = ['loss', 'rec_loss', 'kl_loss'], ['v_loss', 'v_rec_loss', 'v_kl_loss']
         
         ## set history ##
-        history={} 
-        for name in loss_name+v_loss_name: history[name]=[]
+        history={ name:[] for name in loss_name+v_loss_name } 
                 
         ## epoch ## 
         for epoch in range(1, 1+epochs):
