@@ -66,15 +66,15 @@ class CGAN():
             for h in history: history[h].append(0)
             
             ## batch-trainset ##
-            for real_imgs, labels in train_ds:
+            for real_imgs, real_labels in train_ds:
 
                 # phase 1 - train discriminator
                 rnd_noises, _ = self._make_randoms(batch_size) 
-                fake_imgs = self.gene.predict_on_batch([noises, labels])
+                fake_imgs = self.gene.predict_on_batch([rnd_noises, real_labels])
                 
                 self.disc.trainable = True
-                d_loss_real = self.disc.train_on_batch([real_imgs, labels], ones)
-                d_loss_fake = self.disc.train_on_batch([fake_imgs, labels], zeros)
+                d_loss_real = self.disc.train_on_batch([real_imgs, real_labels], ones)
+                d_loss_fake = self.disc.train_on_batch([fake_imgs, real_labels], zeros)
                 d_loss = (0.5*d_loss_real) + (0.5*d_loss_fake)
 
                 # phase 2 - train generator
@@ -115,12 +115,12 @@ class CGAN():
         else: plt.show()
         plt.close()
 
-    def plot_model(self, save_path):
+    def plot_model(self, save_path='.'):
         plot_model(self.cgan, to_file='%s/cgan.png'%save_path, show_shapes=True)
         plot_model(self.gene, to_file='%s/gene.png'%save_path, show_shapes=True)
         plot_model(self.disc, to_file='%s/disc.png'%save_path, show_shapes=True)
 
-    def save_model(self, save_path):
+    def save_model(self, save_path='.'):
         self.cgan.save('%s/cgan.h5'%save_path)
         self.gene.save('%s/gene.h5'%save_path)
         self.disc.save('%s/disc.h5'%save_path)
