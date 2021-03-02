@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
-
+from tensorflow.keras.applications import VGG16
 
 def build_generator( input_shape
                    , n_ResidualBlocks=16
@@ -48,7 +48,7 @@ def build_generator( input_shape
 
     output = _ConvLayer(y, filters=3, kernel_size=9, activation = 'tanh')
     
-    return models.Model(inputs=[input_layer], outputs=[output], name='generator')
+    return models.Model(inputs=[input_layer], outputs=[output], name='G')
 
 def build_discriminator( input_shape
                        , leakyrelu_alpha=0.2
@@ -76,4 +76,16 @@ def build_discriminator( input_shape
     
     output = layers.Dense(units=1, activation='sigmoid')(y)
 
-    return models.Model(inputs=[input_layer], outputs=[output])
+    return models.Model(inputs=[input_layer], outputs=[output], name='D')
+
+def build_vgg(input_shape):
+   
+    
+    input_layer = layers.Input(shape=input_shape)
+    vgg = VGG16(weights='imagenet', include_top=False, input_tensor = input_layer)
+    vgg_output = vgg(input_layer)
+    y = layers.Flatten()(vgg_output)
+    y = layers.Dense(4096)(y)
+    output = layers.Dense(1000, activation='relu')(y) 
+    return models.Model(inputs=[input_layer], outputs=[output], name='VGG')
+
