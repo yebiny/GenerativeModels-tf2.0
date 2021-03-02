@@ -1,12 +1,11 @@
 import tensorflow as tf
-tf.executing_eagerly()
 import os, sys
 import numpy as np
 from functools import reduce
 from build_models import *
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-
+from tensorflow.keras.utils import plot_model
 
 class VAE():
 
@@ -79,6 +78,16 @@ class VAE():
     
         return loss, rec_loss, kl_loss
 
+     def _save_best_model(self, mn_loss, history, valid_split, save_path):
+         if valid_split: base_loss=history['v_loss'][-1]
+         else: base_loss = history['loss'][-1]
+         
+         if mn_loss >= base_loss: 
+             self.save_model(save_path)
+             mn_loss = base_loss
+             print('save model')
+         
+         return mn_loss
 
     def train(self, x_data, epochs=1, batch_size=16, img_iter=1, valid_split=None, save_path=None):
         
@@ -92,6 +101,7 @@ class VAE():
                 
         ## epoch ## 
         for epoch in range(1, 1+epochs):
+            self.epoch=epoch
             for h in history: history[h].append(0)
             
             ## batch-trainset ##
@@ -112,18 +122,13 @@ class VAE():
             
             ## save sample image ##
             if epoch%img_iter==0:
-                if save_path==None: img_save=None
-                else: img_save = '%s/sample_%i'%(save_path, epoch)
-            self.plot_sample_imgs(batch_imgs, save_path=img_save)
+                self.plot_sample_imgs(batch_imgs, save_path=save_path)
 
             ## save best model ##
-            if save_path!=None:
-                if epoch==1: mnloss=history['v_loss'][-1]
-                if mnloss>history['v_loss'][-1]: 
-                    self.save_model(save_path)
-                    mnloss=history['v_loss'][-1]
-                    print('save model')
-
+            if save_path:
+                if epoch==1: mn_loss=base_loss
+                mn_loss = self._save_best_model(mn_loss, history, valid_split, save_path)
+        
         return history 
 
     def plot_sample_imgs(self, imgs, n=10, save_path=None):
@@ -140,7 +145,7 @@ class VAE():
             plt.yticks([])
         
         if save_path!=None: 
-            plt.savefig(save_path)
+            plt.savefig('%s/sample_%i'%(save_path, self.epoch))
         else: plt.show()
 
     def save_model(self, save_path):
@@ -148,5 +153,10 @@ class VAE():
         self.decoder.save('%s/decoder.h5'%save_path)
         self.vae.save('%s/vae.h5'%save_path)
 
+    def plot_model(self, save_path):
+        plot_model(self.encoder, to_file='%s/encoder.png'%save_path, show_shapes=True)
+        plot_model(self.decoder, to_file='%s/decoder.png'%save_path, show_shapes=True)
+        plot_model(self.vae, to_file='%s/vae.png'%save_path, show_shapes=True)
+    
     def load_weight(self, weight_path):
         self.vae.load_weights(weight_path)
