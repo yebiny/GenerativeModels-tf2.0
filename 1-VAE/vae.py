@@ -96,8 +96,7 @@ class VAE():
         loss_name, v_loss_name = ['loss', 'rec_loss', 'kl_loss'], ['v_loss', 'v_rec_loss', 'v_kl_loss']
         
         ## set history ##
-        history={} 
-        for name in loss_name+v_loss_name: history[name]=[]
+        history={ name:[] for name in loss_name+v_loss_name } 
                 
         ## epoch ## 
         for epoch in range(1, 1+epochs):
