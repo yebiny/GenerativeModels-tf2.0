@@ -83,11 +83,11 @@ class GAN():
                                                         , history['d_loss'][-1]
                                                         , history['g_loss'][-1]))
             
-            self.plot_sample_imgs(seed_noises) 
+            self.plot_sample_imgs(seed_noises, save_path) 
         
         return history
 
-    def plot_sample_imgs(self, noises, n=8, save_name=None):
+    def plot_sample_imgs(self, noises, n=8, save_path=None):
         plt.figure(figsize=(n,2))
         gen_imgs = self.gene.predict(noises[:2*n])
         gen_imgs = 0.5 * (gen_imgs+1)
@@ -99,8 +99,8 @@ class GAN():
             plt.xticks([])
             plt.yticks([])
 
-        if save_name!=None:
-            plt.savefig(save_path)
+        if save_path!=None:
+            plt.savefig('%s/sample_img_%i'%(save_path, self.epoch))
         else: plt.show()
 
     def plot_model(self, save_path='.'):

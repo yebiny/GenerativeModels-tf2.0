@@ -74,7 +74,7 @@ class CycleGAN():
         y0 = np.zeros((batch_size, ) +disc_patch)
         return y0, y1
         
-    def train(self, train_a, train_b, epochs, batch_size, iterval=10):
+    def fit(self, train_a, train_b, epochs=1, batch_size=8, img_iter=5, save_path=None):
         
         # set data
         dataset_a = self._make_datasets(train_a, batch_size)
@@ -83,13 +83,12 @@ class CycleGAN():
         y0, y1 = self._make_constant(batch_size)
         
         # train
+        self.plot_sample_images(train_a, self.gene_ab)
+        self.plot_sample_images(train_b, self.gene_ba)
         history = {'d_loss':[], 'g_loss':[]}
-        self.plot_sample_images(train_a, self.gene_ab, save_name='results/img_ab_0')
-        self.plot_sample_images(train_b, self.gene_ba, save_name='results/img_ba_0')
-        for epoch in range(1, epochs+1):
-            print("* epoch {}/{}".format(epoch, epochs))
+        for epoch in range(epochs):
             
-            gene_loss, disc_loss = 0,0
+            gene_loss, disc_loss = 0, 0
             for imgs_a, imgs_b in zip (dataset_a, dataset_b):
             
                 fake_b = self.gene_ab.predict(imgs_a)
@@ -118,39 +117,58 @@ class CycleGAN():
                 
             history['d_loss'].append(disc_loss)
             history['g_loss'].append(gene_loss)
+            print("* epoch {}/{}: ".format(epoch, epochs), 'd_loss: %f, g_loss: %f'%(disc_loss, gene_loss))
             
-            self.plot_sample_images(train_a, self.gene_ab, save_name='results/img_ab_%i'%epoch)
-            self.plot_sample_images(train_b, self.gene_ba, save_name='results/img_ba_%i'%epoch)
+            if epoch%img_iter==0:
+                if save_path: 
+                    self.plot_sample_images(train_a, self.gene_ab, save_name='%s/sample_ab_%i'%(save_path, epoch))
+                    self.plot_sample_images(train_b, self.gene_ba, save_name='%s/sample_ba_%i'%(save_path, epoch))
+                else:     
+                    self.plot_sample_images(imgs_a, self.gene_ab)
+                    self.plot_sample_images(imgs_b, self.gene_ba)
         
         return history
 
-    def plot_sample_images(self, img, generator, save_name=None):
-        r, c = 5, 5
-        gen_imgs = generator.predict(img[:r*c])
+    def plot_sample_images(self, imgs, gene, save_name=None):
+        r, c = 2, 5
+        gen_imgs = gene.predict(imgs[:r*c])
 
         #Rescale images 0 - 1
         gen_imgs = 0.5 * (gen_imgs + 1)
         gen_imgs = np.clip(gen_imgs, 0, 1)
-
-        fig, axs = plt.subplots(r, c, figsize=(15,15))
-        cnt = 0
-
-        for i in range(r):
-            for j in range(c):
-                axs[i,j].imshow(np.squeeze(gen_imgs[cnt, :,:,:]), cmap = 'gray_r')
-                axs[i,j].axis('off')
-                cnt += 1
+        imgs = 0.5 * (imgs + 1)
+        imgs = np.clip(imgs, 0, 1)
         
-        if save_name==None:
-            plt.show()
-        else:
-            fig.savefig(save_name)
-            plt.close()
+        plt.figure(figsize=(c*5,r*5))
+        for i, img in enumerate(imgs[:c]):
+            plt.subplot(r, c, i+1)
+            plt.imshow(np.squeeze(img), cmap='gray_r' )
+            plt.xticks([])
+            plt.yticks([])
+        for i, img in enumerate(gen_imgs[:c]):
+            plt.subplot(r, c, c+i+1)
+            plt.imshow(np.squeeze(img), cmap='gray_r' )
+            plt.xticks([])
+            plt.yticks([])
 
-    def plot_model(self, save_path):
-        plot_model(self.cyclegan, to_file='%s/cyclegan.png'%save_path, show_shapes = True, show_layer_names = True)
-        plot_model(self.gene_ab, to_file='%s/generator.png'%save_path, show_shapes = True, show_layer_names = True)
-        plot_model(self.disc_a, to_file='%s/discriminator.png'%save_path, show_shapes = True, show_layer_names = True)
+        if save_name:
+            plt.savefig(save_name)
+        else: plt.show()
+        plt.close()
+    
+    def plot_model(self, save_path='.'):
+        plot_model( self.cyclegan
+                  , to_file='%s/cyclegan.png'%save_path
+                  , show_shapes = True
+                  , show_layer_names = True)
+        plot_model( self.gene_ab
+                  , to_file='%s/generator.png'%save_path
+                  , show_shapes = True
+                  , show_layer_names = True)
+        plot_model( self.disc_a
+                  , to_file='%s/discriminator.png'%save_path
+                  , show_shapes = True
+                  , show_layer_names = True)
 
     def save_model(self, save_path):
         self.cyclegan.save('%s/cyclegan.h5'%save_path)
