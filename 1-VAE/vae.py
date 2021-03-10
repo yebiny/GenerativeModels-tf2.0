@@ -78,18 +78,18 @@ class VAE():
     
         return loss, rec_loss, kl_loss
 
-     def _save_best_model(self, mn_loss, history, valid_split, save_path):
-         if valid_split: base_loss=history['v_loss'][-1]
-         else: base_loss = history['loss'][-1]
-         
-         if mn_loss >= base_loss: 
-             self.save_model(save_path)
-             mn_loss = base_loss
-             print('save model')
-         
-         return mn_loss
+    def _save_best_model(self, mn_loss, history, valid_split, save_path):
+        if valid_split: base_loss=history['v_loss'][-1]
+        else: base_loss = history['loss'][-1]
+        
+        if mn_loss >= base_loss: 
+            self.save_model(save_path)
+            mn_loss = base_loss
+            print('save model')
+        
+        return mn_loss
 
-    def train(self, x_data, epochs=1, batch_size=16, img_iter=1, valid_split=None, save_path=None):
+    def fit(self, x_data, epochs=1, batch_size=16, img_iter=1, valid_split=None, save_path=None):
         
         ## Set train/valid dataset ##
         train_ds, valid_ds = self._make_dataset(x_data, batch_size, valid_split)

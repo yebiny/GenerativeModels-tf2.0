@@ -4,9 +4,10 @@ from tensorflow.keras import layers, models
 from tensorflow.keras import backend as K
 
 class BuildModel():
-    def __init__(self, img_shape, z_dim, dense_dim=512):
+    def __init__(self, img_shape, z_dim, n_conv_layers=3, dense_dim=256):
         self.img_shape = img_shape
         self.z_dim = z_dim
+        self.n_conv_layers = n_conv_layers
         self.dense_dim = dense_dim
 
     def _sampling(self, args):
@@ -23,20 +24,14 @@ class BuildModel():
         epsilon = K.random_normal(shape=(batch, dim))
         return z_mean + K.exp(0.5 * z_log_var) * epsilon
     
-    
     def build_encoder(self):
         inputs = layers.Input(shape=self.img_shape)
         
         y = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
         y = layers.LeakyReLU()(y)
-        y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-        y = layers.LeakyReLU()(y)
-        #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
-        #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
-        #y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
+        for n in range(self.n_conv_layers-1):
+            y = layers.Conv2D(32, 3, strides=2, padding="same")(y)
+            y = layers.LeakyReLU()(y)
         self.y_shape = y.shape
         
         y = layers.Flatten()(y)
@@ -59,15 +54,10 @@ class BuildModel():
         y = layers.Dense( self.y_shape[1]*self.y_shape[2]*self.y_shape[3]
                         , activation="relu")(y)
         y = layers.Reshape(self.y_shape[1:])(y)
-        
-        y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-        y = layers.LeakyReLU()(y)
-        #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
-        #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
-        #y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
-        #y = layers.LeakyReLU()(y)
+       
+        for n in range(self.n_conv_layers-1):
+            y = layers.Conv2DTranspose(32, 3, strides=2, padding="same")(y)
+            y = layers.LeakyReLU()(y)
         y = layers.Conv2DTranspose(self.img_shape[-1], 3, strides=2, padding="same")(y)
         y = layers.Activation('sigmoid')(y)
     
