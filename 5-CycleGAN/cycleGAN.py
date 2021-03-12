@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 class CycleGAN():
-    def __init__(self, generator_ab, generator_ba, discriminator_a, discriminator_b):
+    def __init__(self, generator_ab, generator_ba, discriminator_a, discriminator_b, input_shape, patch_shape):
        
         # set init vars
         self.name = 'cycleGAN'
@@ -16,7 +16,8 @@ class CycleGAN():
         self.gene_ba = generator_ba
         self.disc_a = discriminator_a
         self.disc_b = discriminator_b
-        self.input_shape = discriminator_a.input_shape[1:]
+        self.input_shape = input_shape
+        self.patch_shape = patch_shape
 
     def compile( self
                , optimizer 
@@ -24,9 +25,10 @@ class CycleGAN():
                , lambda_cycle = 10
                , lambda_ident = 9 ):
         
-        
-        self.disc_a.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
-        self.disc_b.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
+        binary = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+
+        self.disc_a.compile(loss=binary, optimizer=optimizer, metrics=['accuracy'])
+        self.disc_b.compile(loss=binary, optimizer=optimizer, metrics=['accuracy'])
         
         self.disc_a.trainable=False
         self.disc_b.trainable=False
@@ -34,25 +36,26 @@ class CycleGAN():
         img_a = layers.Input(shape = self.input_shape, name='input_a')
         img_b = layers.Input(shape = self.input_shape, name='input_b')
         
-        fake_b = self.gene_ab(img_a)
         fake_a = self.gene_ba(img_b)
+        fake_b = self.gene_ab(img_a)
         
-        reco_b = self.gene_ab(fake_a)
-        reco_a = self.gene_ba(fake_b)
-        
-        cycle_b = self.gene_ab(img_b)
-        cycle_a = self.gene_ba(img_a)
-       
         valid_a = self.disc_a(fake_a)
         valid_b = self.disc_b(fake_b)
+        
+        cycle_a = self.gene_ba(fake_b)
+        cycle_b = self.gene_ab(fake_a)
+        
+        ident_a = self.gene_ba(img_a)
+        ident_b = self.gene_ab(img_b)
         
         self.cyclegan = models.Model(name='CycleGAN',
                                 inputs=[img_a, img_b], 
                                 outputs=[valid_a, valid_b, 
-                                        reco_a, reco_b,
-                                        cycle_a, cycle_b])
-
-        self.cyclegan.compile(loss = ['mse', 'mse', 'mae', 'mae', 'mae', 'mae'],
+                                        cycle_a, cycle_b,
+                                        ident_a, ident_b
+                                        ])
+        
+        self.cyclegan.compile(loss = [binary, binary, 'mae', 'mae', 'mae', 'mae'],
                               loss_weights=[lambda_valid, lambda_valid, 
                                             lambda_cycle, lambda_cycle, 
                                             lambda_ident, lambda_ident],
@@ -68,10 +71,8 @@ class CycleGAN():
         return dataset
     
     def _make_constant(self, batch_size):
-        patch=int(self.input_shape[0]/2**4)
-        disc_patch = (patch, patch, 1)
-        y1 = np.ones((batch_size, ) + disc_patch)
-        y0 = np.zeros((batch_size, ) +disc_patch)
+        y1 = np.ones((batch_size, ) + self.patch_shape)
+        y0 = np.zeros((batch_size,) + self.patch_shape)
         return y0, y1
         
     def fit(self, train_a, train_b, epochs=1, batch_size=8, img_iter=5, save_path=None):
@@ -85,10 +86,10 @@ class CycleGAN():
         # train
         self.plot_sample_images(train_a, self.gene_ab)
         self.plot_sample_images(train_b, self.gene_ba)
-        history = {'d_loss':[], 'g_loss':[]}
+        history = {'d_loss':[], 'g_loss':[], 'valid_loss':[], 'cycle_loss':[], 'ident_loss':[]}
         for epoch in range(epochs):
             
-            gene_loss, disc_loss = 0, 0
+            disc_loss, gene_loss, valid_loss, cycle_loss, ident_loss  = 0, 0, 0, 0, 0
             for imgs_a, imgs_b in zip (dataset_a, dataset_b):
             
                 fake_b = self.gene_ab.predict(imgs_a)
@@ -104,28 +105,33 @@ class CycleGAN():
                 db_loss_real = self.disc_b.train_on_batch(imgs_b, y1)
                 db_loss_fake = self.disc_b.train_on_batch(fake_b, y0)
                 db_loss = 0.5*np.add(db_loss_real, db_loss_fake)
-                
                 d_loss = 0.5*np.add(da_loss, db_loss)
                 
                 self.disc_a.trainable = False
                 self.disc_b.trainable = False
                 g_loss = self.cyclegan.train_on_batch([imgs_a, imgs_b],
                                                      [y1, y1, imgs_a, imgs_b, imgs_a, imgs_b]) 
-                
                 disc_loss = disc_loss + d_loss[0]
-                gene_loss = gene_loss + g_loss[0]
-                
+                valid_loss=valid_loss + g_loss[0] + g_loss[1]
+                cycle_loss=cycle_loss + g_loss[2] + g_loss[3]
+                ident_loss=ident_loss + g_loss[4] + g_loss[5]
+                gene_loss = gene_loss + valid_loss + cycle_loss + ident_loss 
+            
+            print(d_loss, g_loss)
             history['d_loss'].append(disc_loss)
             history['g_loss'].append(gene_loss)
-            print("* epoch {}/{}: ".format(epoch, epochs), 'd_loss: %f, g_loss: %f'%(disc_loss, gene_loss))
+            history['valid_loss'].append(valid_loss)
+            history['cycle_loss'].append(cycle_loss)
+            history['ident_loss'].append(ident_loss)
+            print("* epoch {}/{}: ".format(epoch, epochs), 'd_loss: %f, g_loss: %f, valid_loss: %f, cycle_loss: %f, ident_loss: %f'%(disc_loss, gene_loss, valid_loss, cycle_loss, ident_loss))
             
             if epoch%img_iter==0:
                 if save_path: 
                     self.plot_sample_images(train_a, self.gene_ab, save_name='%s/sample_ab_%i'%(save_path, epoch))
                     self.plot_sample_images(train_b, self.gene_ba, save_name='%s/sample_ba_%i'%(save_path, epoch))
                 else:     
-                    self.plot_sample_images(imgs_a, self.gene_ab)
-                    self.plot_sample_images(imgs_b, self.gene_ba)
+                    self.plot_sample_images(train_a, self.gene_ab)
+                    self.plot_sample_images(train_b, self.gene_ba)
         
         return history
 
