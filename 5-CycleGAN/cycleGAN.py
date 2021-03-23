@@ -18,7 +18,8 @@ class CycleGAN():
         self.disc_b = discriminator_b
         self.input_shape = input_shape
         self.patch_shape = patch_shape
-
+    
+    
     def compile( self
                , optimizer 
                , lambda_valid = 1 
@@ -163,22 +164,17 @@ class CycleGAN():
         plt.close()
     
     def plot_model(self, save_path='.'):
-        plot_model( self.cyclegan
-                  , to_file='%s/cyclegan.png'%save_path
-                  , show_shapes = True
-                  , show_layer_names = True)
-        plot_model( self.gene_ab
-                  , to_file='%s/generator.png'%save_path
-                  , show_shapes = True
-                  , show_layer_names = True)
-        plot_model( self.disc_a
-                  , to_file='%s/discriminator.png'%save_path
-                  , show_shapes = True
-                  , show_layer_names = True)
-
-    def save_model(self, save_path):
+        tf.keras.utils.plot_model( 
+                    self.gene_ab
+                  , to_file='%s/gene.png'%save_path
+                  , show_shapes = True)
+        tf.keras.utils.plot_model( 
+                    self.disc_a
+                  , to_file='%s/disc.png'%save_path
+                  , show_shapes = True)
+    def save_model(self, save_path='.'):
         self.cyclegan.save('%s/cyclegan.h5'%save_path)
-        self.gene_ab.save('%s/generator_ab.h5'%save_path)
-        self.gene_ba.save('%s/generator_ba.h5'%save_path)
-        self.disc_a.save('%s/discriminator_a.h5'%save_path)
-        self.disc_b.save('%s/discriminator_b.h5'%save_path)
+        self.gene_ab.save('%s/gene_ab.h5'%save_path)
+        self.gene_ba.save('%s/gene_ba.h5'%save_path)
+        self.disc_a.save('%s/disc_a.h5'%save_path)
+        self.disc_b.save('%s/disc_b.h5'%save_path)
